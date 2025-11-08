@@ -30,6 +30,18 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-icon.png",
   },
+  openGraph: {
+    title: "Farcaster NFT Wallet",
+    description: "View your ETH balance and NFT collection",
+    images: ["/colorful-abstract-ape-art.jpg"],
+  },
+  other: {
+    "fc:frame": "vNext",
+    "fc:frame:image": "https://fc-miniapp-nft-v2.vercel.app/colorful-abstract-ape-art.jpg",
+    "fc:frame:button:1": "Open App",
+    "fc:frame:button:1:action": "link",
+    "fc:frame:button:1:target": "https://fc-miniapp-nft-v2.vercel.app",
+  },
 }
 
 export default function RootLayout({
