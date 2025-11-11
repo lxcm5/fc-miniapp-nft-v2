@@ -22,18 +22,22 @@ export default function Page() {
           </div>
         </header>
 
-        {!isSDKLoaded && <div className="mb-4 text-sm text-muted-foreground">Loading Farcaster SDK...</div>}
+        {!isSDKLoaded ? (
+          <div className="mb-4 text-sm text-muted-foreground">Loading Farcaster SDK...</div>
+        ) : (
+          <>
+            {/* Wallet Balance */}
+            <div className="mb-8">
+              <WalletBalance />
+            </div>
 
-        {/* Wallet Balance */}
-        <div className="mb-8">
-          <WalletBalance />
-        </div>
-
-        {/* NFT Collection */}
-        <div>
-          <h2 className="text-xl font-semibold text-foreground mb-4">My NFT Collection</h2>
-          <NFTGrid />
-        </div>
+            {/* NFT Collection */}
+            <div>
+              <h2 className="text-xl font-semibold text-foreground mb-4">My NFT Collection</h2>
+              <NFTGrid />
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

@@ -15,12 +15,17 @@ interface NFT {
 }
 
 export function NFTGrid() {
-  const { walletAddress, isWalletConnected } = useFarcaster()
+  const { walletAddress, isWalletConnected, isSDKLoaded } = useFarcaster()
   const [nfts, setNfts] = useState<NFT[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchNFTs = async () => {
+      if (!isSDKLoaded) {
+        console.log("[v0] SDK not loaded yet, waiting...")
+        return
+      }
+
       console.log("[v0] NFTGrid useEffect triggered")
       console.log("[v0] Wallet address:", walletAddress)
       console.log("[v0] Is wallet connected:", isWalletConnected)
@@ -105,7 +110,7 @@ export function NFTGrid() {
     }
 
     fetchNFTs()
-  }, [walletAddress, isWalletConnected])
+  }, [walletAddress, isWalletConnected, isSDKLoaded]) // Add isSDKLoaded dependency
 
   if (loading) {
     return (
