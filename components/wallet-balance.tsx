@@ -11,7 +11,7 @@ export function WalletBalance() {
   const usdBalance = ethBalance ? (Number.parseFloat(ethBalance) * ethToUsd).toFixed(2) : "0.00"
 
   return (
-    <Card className="p-6 bg-card border-border">
+    <Card className="p-5 bg-card border-border">
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className="text-sm text-muted-foreground mb-1">Total Balance</p>
@@ -19,7 +19,7 @@ export function WalletBalance() {
             <>
               {isWalletConnected && ethBalance !== null ? (
                 <>
-                  <h2 className="text-3xl font-semibold text-foreground">{ethBalance} ETH</h2>
+                  <h2 className="text-2xl font-semibold text-foreground">{ethBalance} ETH</h2>
                   <p className="text-sm text-muted-foreground mt-1">≈ ${usdBalance} USD</p>
                   {walletAddress && (
                     <p className="text-xs text-muted-foreground mt-2 font-mono">
@@ -40,9 +40,9 @@ export function WalletBalance() {
             <div className="h-10 w-32 bg-muted animate-pulse rounded" />
           )}
         </div>
-        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
+        <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary/10">
           <svg
-            className="w-8 h-8 text-primary"
+            className="w-7 h-7 text-primary"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
