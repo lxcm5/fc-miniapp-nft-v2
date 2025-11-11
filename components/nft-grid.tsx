@@ -21,12 +21,8 @@ export function NFTGrid() {
 
   useEffect(() => {
     const fetchNFTs = async () => {
-      if (!isSDKLoaded) {
-        console.log("[v0] SDK not loaded yet, waiting...")
-        return
-      }
-
       console.log("[v0] NFTGrid useEffect triggered")
+      console.log("[v0] SDK loaded:", isSDKLoaded)
       console.log("[v0] Wallet address:", walletAddress)
       console.log("[v0] Is wallet connected:", isWalletConnected)
 
@@ -47,7 +43,7 @@ export function NFTGrid() {
         console.log("[v0] Alchemy API response status:", response.status)
 
         const data = await response.json()
-        console.log("[v0] Alchemy data received:", JSON.stringify(data, null, 2))
+        console.log("[v0] Alchemy data received:", data)
 
         if (data.ownedNfts && data.ownedNfts.length > 0) {
           const formattedNFTs = data.ownedNfts.slice(0, 12).map((nft: any) => ({
@@ -62,55 +58,23 @@ export function NFTGrid() {
             tokenId: nft.tokenId,
             contractAddress: nft.contract.address,
           }))
-          console.log("[v0] Formatted NFTs from Alchemy:", formattedNFTs)
+          console.log("[v0] Formatted NFTs:", formattedNFTs.length, "items")
           setNfts(formattedNFTs)
         } else {
-          console.log("[v0] No NFTs found in Alchemy response")
-          // Fallback to SimpleHash API
-          const simpleHashUrl = `https://api.simplehash.com/api/v0/nfts/owners?chains=base&wallet_addresses=${walletAddress}&limit=12`
-
-          console.log("[v0] Fetching from SimpleHash API...")
-          const simpleHashResponse = await fetch(simpleHashUrl, {
-            headers: {
-              Accept: "application/json",
-              "X-API-KEY": "simplehash_public_demo",
-            },
-          })
-          console.log("[v0] SimpleHash API response status:", simpleHashResponse.status)
-
-          const simpleHashData = await simpleHashResponse.json()
-          console.log("[v0] SimpleHash data received:", simpleHashData)
-
-          if (simpleHashData.nfts && simpleHashData.nfts.length > 0) {
-            const formattedSimpleHashNFTs = simpleHashData.nfts.slice(0, 12).map((nft: any) => ({
-              id: `${nft.contract_address}-${nft.token_id}`,
-              name: nft.name || nft.collection?.name || "Unnamed NFT",
-              collection: nft.collection?.name || "Unknown Collection",
-              image:
-                nft.image_url ||
-                nft.previews?.image_medium_url ||
-                nft.previews?.image_small_url ||
-                "/digital-art-collection.png",
-              tokenId: nft.token_id,
-              contractAddress: nft.contract_address,
-            }))
-            console.log("[v0] Formatted NFTs from SimpleHash:", formattedSimpleHashNFTs)
-            setNfts(formattedSimpleHashNFTs)
-          } else {
-            console.log("[v0] No NFTs found in SimpleHash response")
-            setNfts([])
-          }
+          console.log("[v0] No NFTs in Alchemy response, setting empty array")
+          setNfts([])
         }
       } catch (error) {
         console.error("[v0] Error fetching NFTs:", error)
         setNfts([])
       } finally {
         setLoading(false)
+        console.log("[v0] NFT fetch completed")
       }
     }
 
     fetchNFTs()
-  }, [walletAddress, isWalletConnected, isSDKLoaded]) // Add isSDKLoaded dependency
+  }, [walletAddress, isWalletConnected]) // Removed isSDKLoaded dependency
 
   if (loading) {
     return (

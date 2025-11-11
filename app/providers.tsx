@@ -48,35 +48,41 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const load = async () => {
       try {
-        console.log("[v0] Loading Farcaster SDK...")
-        const frameContext = await sdk.context
-        console.log("[v0] Frame context loaded:", frameContext)
-        setContext(frameContext)
-
-        console.log("[v0] User object:", frameContext?.user)
-        console.log("[v0] Custody address:", frameContext?.user?.custody_address)
-        console.log("[v0] Verified addresses:", frameContext?.user?.verified_addresses)
-
-        const address =
-          frameContext?.user?.custody_address || frameContext?.user?.verified_addresses?.eth_addresses?.[0]
-        console.log("[v0] Final wallet address extracted:", address)
-
-        if (address) {
-          setWalletAddress(address)
-          setIsWalletConnected(true)
-          localStorage.setItem("farcaster_wallet_address", address)
-          localStorage.setItem("farcaster_wallet_connected", "true")
-          console.log("[v0] Wallet connected and saved, fetching balance...")
-          await fetchBalance(address)
-        } else {
-          console.log("[v0] No address found in context")
-        }
+        console.log("[v0] Initializing Farcaster SDK...")
 
         sdk.actions.ready()
-        console.log("[v0] SDK ready called")
         setIsSDKLoaded(true)
+        console.log("[v0] SDK ready called immediately")
+
+        try {
+          const frameContext = await sdk.context
+          console.log("[v0] Frame context loaded:", frameContext)
+          setContext(frameContext)
+
+          console.log("[v0] User object:", frameContext?.user)
+          console.log("[v0] Custody address:", frameContext?.user?.custody_address)
+          console.log("[v0] Verified addresses:", frameContext?.user?.verified_addresses)
+
+          const address =
+            frameContext?.user?.custody_address || frameContext?.user?.verified_addresses?.eth_addresses?.[0]
+          console.log("[v0] Final wallet address extracted:", address)
+
+          if (address) {
+            setWalletAddress(address)
+            setIsWalletConnected(true)
+            localStorage.setItem("farcaster_wallet_address", address)
+            localStorage.setItem("farcaster_wallet_connected", "true")
+            console.log("[v0] Wallet connected and saved, fetching balance...")
+            await fetchBalance(address)
+          } else {
+            console.log("[v0] No address found in context")
+          }
+        } catch (contextError) {
+          console.log("[v0] Context not available (might be in browser):", contextError)
+        }
       } catch (error) {
         console.error("[v0] Error loading SDK:", error)
+        sdk.actions.ready()
         setIsSDKLoaded(true)
       }
     }
