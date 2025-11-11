@@ -36,17 +36,24 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
     const load = async () => {
       console.log("[v0] Loading Farcaster SDK...")
       const frameContext = await sdk.context
-      console.log("[v0] Frame context loaded:", frameContext)
+      console.log("[v0] Frame context loaded:", JSON.stringify(frameContext, null, 2))
       setContext(frameContext)
 
+      console.log("[v0] User object:", frameContext?.user)
+      console.log("[v0] Custody address:", frameContext?.user?.custody_address)
+      console.log("[v0] Verified addresses:", frameContext?.user?.verified_addresses)
+      console.log("[v0] ETH addresses:", frameContext?.user?.verified_addresses?.eth_addresses)
+
       const address = frameContext?.user?.custody_address || frameContext?.user?.verified_addresses?.eth_addresses?.[0]
-      console.log("[v0] Wallet address from context:", address)
+      console.log("[v0] Final wallet address extracted:", address)
 
       if (address) {
         setWalletAddress(address)
         setIsWalletConnected(true)
-        // Fetch ETH balance
+        console.log("[v0] Wallet connected, fetching balance...")
         await fetchBalance(address)
+      } else {
+        console.log("[v0] No address found in context, wallet not connected")
       }
 
       // Notify Farcaster that the app is ready
