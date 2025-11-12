@@ -3,9 +3,19 @@
 import { WalletBalance } from "@/components/wallet-balance"
 import { NFTGrid } from "@/components/nft-grid"
 import { useFarcaster } from "@/app/providers"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
 
 export default function Page() {
   const { isSDKLoaded } = useFarcaster()
+  const [gridMode, setGridMode] = useState<2 | 3 | 4 | "list">(3)
+
+  const cycleGridMode = () => {
+    if (gridMode === 2) setGridMode(3)
+    else if (gridMode === 3) setGridMode(4)
+    else if (gridMode === 4) setGridMode("list")
+    else setGridMode(2)
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,8 +43,42 @@ export default function Page() {
 
             {/* NFT Collection */}
             <div>
-              <h2 className="text-xl font-semibold text-foreground mb-3">My NFT Collection</h2>
-              <NFTGrid />
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-semibold text-foreground">My NFT Collection</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={cycleGridMode}
+                  className="flex items-center gap-2 bg-transparent"
+                >
+                  {gridMode === "list" ? (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 6h16M4 12h16M4 18h16"
+                        />
+                      </svg>
+                      List
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                        />
+                      </svg>
+                      {gridMode}×
+                    </>
+                  )}
+                </Button>
+              </div>
+              <NFTGrid gridMode={gridMode} />
             </div>
           </>
         )}
