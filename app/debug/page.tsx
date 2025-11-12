@@ -12,7 +12,7 @@ type NftItem = {
 
 export default function DebugPage() {
   // TODO: put your test wallet address here (checks Alchemy pipeline end-to-end)
-  const WALLET_ADDRESS = '0xYourWalletAddressHere'; // e.g. 0xabc...123
+  const WALLET_ADDRESS = '0xdBB9f76DC289B4cec58BCfe10923084F96Fa6Aee'; // e.g. 0xabc...123
 
   const [nfts, setNfts] = useState<NftItem[]>([]);
   const [error, setError] = useState<string>('');
