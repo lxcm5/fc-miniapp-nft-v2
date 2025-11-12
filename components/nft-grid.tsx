@@ -21,31 +21,33 @@ export function NFTGrid() {
 
   useEffect(() => {
     const fetchNFTs = async () => {
-      console.log("[v0] NFTGrid useEffect triggered")
+      console.log("[v0] === NFT FETCH DEBUG ===")
       console.log("[v0] SDK loaded:", isSDKLoaded)
+      console.log("[v0] Wallet connected:", isWalletConnected)
       console.log("[v0] Wallet address:", walletAddress)
-      console.log("[v0] Is wallet connected:", isWalletConnected)
+      console.log("[v0] Address type:", typeof walletAddress)
+      console.log("[v0] Address length:", walletAddress?.length)
 
       if (!walletAddress) {
-        console.log("[v0] No wallet address available, skipping NFT fetch")
+        console.log("[v0] ❌ No wallet address, stopping fetch")
         setLoading(false)
         return
       }
 
       try {
         setLoading(true)
-        console.log("[v0] Starting NFT fetch for address:", walletAddress)
+        const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/pSYF7FVv63ho_VUplwQrK/getNFTsForOwner?owner=${walletAddress}&withMetadata=true&pageSize=12`
 
-        const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/7u5ZqwwJfvQ0-EXdDXaU4n9UZAWCrBXq/getNFTsForOwner?owner=${walletAddress}&withMetadata=true&pageSize=12`
-
-        console.log("[v0] Fetching from Alchemy API...")
+        console.log("[v0] 🚀 Fetching NFTs from:", alchemyUrl)
         const response = await fetch(alchemyUrl)
-        console.log("[v0] Alchemy API response status:", response.status)
+        console.log("[v0] 📡 Response status:", response.status)
+        console.log("[v0] 📡 Response ok:", response.ok)
 
         const data = await response.json()
-        console.log("[v0] Alchemy data received:", data)
+        console.log("[v0] 📦 API Response:", JSON.stringify(data, null, 2))
 
         if (data.ownedNfts && data.ownedNfts.length > 0) {
+          console.log("[v0] ✅ Found", data.ownedNfts.length, "NFTs")
           const formattedNFTs = data.ownedNfts.slice(0, 12).map((nft: any) => ({
             id: `${nft.contract.address}-${nft.tokenId}`,
             name: nft.name || nft.contract.name || "Unnamed NFT",
@@ -58,18 +60,17 @@ export function NFTGrid() {
             tokenId: nft.tokenId,
             contractAddress: nft.contract.address,
           }))
-          console.log("[v0] Formatted NFTs:", formattedNFTs.length, "items")
+          console.log("[v0] 🎨 Formatted NFTs:", formattedNFTs)
           setNfts(formattedNFTs)
         } else {
-          console.log("[v0] No NFTs in Alchemy response, setting empty array")
+          console.log("[v0] ⚠️ No NFTs found in response")
           setNfts([])
         }
       } catch (error) {
-        console.error("[v0] Error fetching NFTs:", error)
+        console.error("[v0] ❌ Error fetching NFTs:", error)
         setNfts([])
       } finally {
         setLoading(false)
-        console.log("[v0] NFT fetch completed")
       }
     }
 

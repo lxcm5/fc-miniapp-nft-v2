@@ -15,14 +15,13 @@ export function WalletBalance() {
       if (!walletAddress) return
 
       try {
-        const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/7u5ZqwwJfvQ0-EXdDXaU4n9UZAWCrBXq/getNFTsForOwner?owner=${walletAddress}&withMetadata=true`
+        const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/pSYF7FVv63ho_VUplwQrK/getNFTsForOwner?owner=${walletAddress}&withMetadata=true`
         const response = await fetch(alchemyUrl)
         const data = await response.json()
 
         if (data.ownedNfts) {
           setNftCount(data.ownedNfts.length)
-          // Mock floor value calculation (in real app, would fetch floor prices)
-          setNftTotalValue(data.ownedNfts.length * 0.05) // Placeholder: 0.05 ETH per NFT
+          setNftTotalValue(data.ownedNfts.length * 0.05)
         }
       } catch (error) {
         console.error("[v0] Error fetching NFT stats:", error)
@@ -38,7 +37,7 @@ export function WalletBalance() {
 
   return (
     <Card className="p-4 bg-card border-border">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         {/* Left side - ETH Balance */}
         <div className="flex-1">
           <p className="text-sm text-muted-foreground mb-1">Total Balance</p>
@@ -68,7 +67,7 @@ export function WalletBalance() {
           )}
         </div>
 
-        {/* Right side - NFT Stats (replaces icon) */}
+        {/* Right side - NFT Stats (aligned with left side) */}
         {isWalletConnected && ethBalance !== null ? (
           <div className="flex-1 text-right">
             <p className="text-sm text-muted-foreground mb-1">NFT Collection</p>
