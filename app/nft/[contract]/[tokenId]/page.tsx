@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
+import { SendNFTModal } from "@/components/send-nft-modal"
+import { useState } from "react"
 
 export default function NFTDetailPage({ params }: { params: { contract: string; tokenId: string } }) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [showSendModal, setShowSendModal] = useState(false)
 
   const nftDataString = searchParams.get("data")
   const nft = nftDataString ? JSON.parse(decodeURIComponent(nftDataString)) : null
@@ -104,10 +107,7 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
             <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">List for sale</Button>
             <Button
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-              onClick={() => {
-                // Import and use SendNFTModal here
-                alert("Send functionality - will open modal")
-              }}
+              onClick={() => setShowSendModal(true)}
             >
               Send
             </Button>
@@ -117,6 +117,8 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
           </Button>
         </div>
       </div>
+
+      <SendNFTModal isOpen={showSendModal} onClose={() => setShowSendModal(false)} nftIds={[nft.id]} />
     </div>
   )
 }
