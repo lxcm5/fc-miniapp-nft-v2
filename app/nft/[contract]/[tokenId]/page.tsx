@@ -102,7 +102,15 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">List for sale</Button>
-            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">Send</Button>
+            <Button
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+              onClick={() => {
+                // Import and use SendNFTModal here
+                alert("Send functionality - will open modal")
+              }}
+            >
+              Send
+            </Button>
           </div>
           <Button variant="outline" className="w-full bg-transparent" onClick={handleHide}>
             {nft.isHiddenPage ? "Unhide" : "Hide"}

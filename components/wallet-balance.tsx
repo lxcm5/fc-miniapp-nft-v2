@@ -15,14 +15,33 @@ export function WalletBalance() {
       if (!walletAddress) return
 
       try {
-        const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/pSYF7FVv63ho_VUplwQrK/getNFTsForOwner?owner=${walletAddress}&withMetadata=true`
-        const response = await fetch(alchemyUrl)
-        const data = await response.json()
+        let allNFTs: any[] = []
+        let pageKey: string | undefined = undefined
 
-        if (data.ownedNfts) {
-          setNftCount(data.ownedNfts.length)
-          setNftTotalValue(data.ownedNfts.length * 0.05)
-        }
+        do {
+          const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/pSYF7FVv63ho_VUplwQrK/getNFTsForOwner?owner=${walletAddress}&withMetadata=true&pageSize=100${pageKey ? `&pageKey=${pageKey}` : ""}`
+          const response = await fetch(alchemyUrl)
+          const data = await response.json()
+
+          if (data.ownedNfts && data.ownedNfts.length > 0) {
+            allNFTs = [...allNFTs, ...data.ownedNfts]
+          }
+
+          pageKey = data.pageKey
+        } while (pageKey)
+
+        const nftsWithFloor = allNFTs.filter((nft: any) => {
+          const floorPrice = nft.contract.openSeaMetadata?.floorPrice
+          return floorPrice && floorPrice > 0
+        })
+
+        const totalValue = nftsWithFloor.reduce((sum: number, nft: any) => {
+          const floorPrice = nft.contract.openSeaMetadata?.floorPrice || 0
+          return sum + Number(floorPrice)
+        }, 0)
+
+        setNftCount(nftsWithFloor.length)
+        setNftTotalValue(totalValue)
       } catch (error) {
         console.error("[v0] Error fetching NFT stats:", error)
       }

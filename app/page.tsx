@@ -2,6 +2,7 @@
 
 import { WalletBalance } from "@/components/wallet-balance"
 import { NFTGrid } from "@/components/nft-grid"
+import { SendNFTModal } from "@/components/send-nft-modal"
 import { useFarcaster } from "@/app/providers"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -12,6 +13,7 @@ export default function Page() {
   const [gridMode, setGridMode] = useState<2 | 3 | 4 | "list">(3)
   const [selectedNFTs, setSelectedNFTs] = useState<string[]>([])
   const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false)
   const router = useRouter()
 
   const cycleGridMode = () => {
@@ -22,8 +24,7 @@ export default function Page() {
   }
 
   const handleSendSelected = () => {
-    console.log("[v0] Send NFTs:", selectedNFTs)
-    alert("Send functionality coming soon!")
+    setIsSendModalOpen(true)
   }
 
   const handleHideSelected = () => {
@@ -42,7 +43,7 @@ export default function Page() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-[1.35rem] font-bold text-foreground">NFT aWallet</h1>
             <Button variant="outline" size="sm" onClick={() => router.push("/hidden")} className="bg-transparent">
-              Hidden
+              Hidden NFTs
             </Button>
           </div>
         </header>
@@ -116,6 +117,16 @@ export default function Page() {
           </div>
         </div>
       )}
+
+      <SendNFTModal
+        isOpen={isSendModalOpen}
+        onClose={() => {
+          setIsSendModalOpen(false)
+          setSelectedNFTs([])
+          setIsSelectionMode(false)
+        }}
+        nftIds={selectedNFTs}
+      />
     </div>
   )
 }

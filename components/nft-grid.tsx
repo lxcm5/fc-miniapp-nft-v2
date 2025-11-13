@@ -224,7 +224,7 @@ export function NFTGrid({
         return (
           <Card
             key={nft.id}
-            className={`overflow-hidden border-border hover:shadow-lg transition-shadow cursor-pointer bg-card relative ${isSelected ? "ring-2 ring-primary" : ""}`}
+            className={`overflow-hidden border-border hover:shadow-lg transition-shadow cursor-pointer bg-card relative ${isSelected ? "ring-2 ring-primary" : ""} ${!showDescriptions ? "p-0" : ""}`}
             onClick={() => handleNFTClick(nft)}
             onContextMenu={(e) => {
               e.preventDefault()
@@ -247,10 +247,10 @@ export function NFTGrid({
               <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover" />
             </div>
             {showDescriptions && (
-              <div className="p-2 space-y-1">
-                <h3 className="font-semibold text-xs text-foreground truncate leading-tight">{nft.name}</h3>
-                <p className="text-[10px] text-muted-foreground truncate leading-tight">{nft.collection}</p>
-                <p className="text-[10px] text-muted-foreground leading-tight">Floor: {nft.floorPrice} ETH</p>
+              <div className="p-1.5 space-y-0.5">
+                <h3 className="font-semibold text-[11px] text-foreground truncate leading-tight">{nft.name}</h3>
+                <p className="text-[9px] text-muted-foreground truncate leading-tight">{nft.collection}</p>
+                <p className="text-[9px] text-muted-foreground leading-tight">Floor: {nft.floorPrice} ETH</p>
               </div>
             )}
           </Card>
