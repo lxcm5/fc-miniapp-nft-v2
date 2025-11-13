@@ -4,11 +4,13 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useFarcaster } from "@/app/providers"
 import { useEffect, useState } from "react"
+import { Copy, Check } from "lucide-react"
 
 export function WalletBalance() {
   const { isSDKLoaded, walletAddress, ethBalance, isWalletConnected, connectWallet } = useFarcaster()
   const [nftCount, setNftCount] = useState<number>(0)
   const [nftTotalValue, setNftTotalValue] = useState<number>(0)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     const fetchNFTStats = async () => {
@@ -30,7 +32,13 @@ export function WalletBalance() {
           pageKey = data.pageKey
         } while (pageKey)
 
-        const nftsWithFloor = allNFTs.filter((nft: any) => {
+        const hiddenNFTs = JSON.parse(localStorage.getItem("hidden_nfts") || "[]")
+        const visibleNFTs = allNFTs.filter((nft: any) => {
+          const nftId = `${nft.contract.address}-${nft.tokenId.tokenId || nft.tokenId}`
+          return !hiddenNFTs.includes(nftId)
+        })
+
+        const nftsWithFloor = visibleNFTs.filter((nft: any) => {
           const floorPrice = nft.contract.openSeaMetadata?.floorPrice
           return floorPrice && floorPrice > 0
         })
@@ -40,7 +48,7 @@ export function WalletBalance() {
           return sum + Number(floorPrice)
         }, 0)
 
-        setNftCount(nftsWithFloor.length)
+        setNftCount(visibleNFTs.length)
         setNftTotalValue(totalValue)
       } catch (error) {
         console.error("[v0] Error fetching NFT stats:", error)
@@ -49,6 +57,14 @@ export function WalletBalance() {
 
     fetchNFTStats()
   }, [walletAddress])
+
+  const handleCopy = () => {
+    if (walletAddress) {
+      navigator.clipboard.writeText(walletAddress)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   const ethToUsd = 2850
   const usdBalance = ethBalance ? (Number.parseFloat(ethBalance) * ethToUsd).toFixed(2) : "0.00"
@@ -67,9 +83,18 @@ export function WalletBalance() {
                   <h2 className="text-[1.44rem] font-semibold text-foreground">{ethBalance} ETH</h2>
                   <p className="text-sm text-muted-foreground mt-1">≈ ${usdBalance} USD</p>
                   {walletAddress && (
-                    <p className="text-xs text-muted-foreground mt-2 font-mono">
-                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                      </p>
+                      <button
+                        onClick={handleCopy}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        title="Copy address"
+                      >
+                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
                   )}
                 </>
               ) : (

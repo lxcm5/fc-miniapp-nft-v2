@@ -70,23 +70,24 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
     console.log("[v0] NFT data:", nftData)
 
     try {
-      // Import ethers for transaction
-      const { ethers } = await import("ethers")
+      const sdk = (await import("@farcaster/frame-sdk")).default
 
-      // Get provider from window.ethereum
-      if (!window.ethereum) {
-        throw new Error("No wallet found")
+      if (!sdk?.wallet?.ethProvider) {
+        throw new Error("No wallet found - Please open in Farcaster app")
       }
 
-      const provider = new ethers.BrowserProvider(window.ethereum)
+      const { ethers } = await import("ethers")
+
+      const provider = new ethers.BrowserProvider(sdk.wallet.ethProvider)
       const signer = await provider.getSigner()
 
-      // ERC-721 transfer function
+      console.log("[v0] Using Farcaster wallet, signer address:", await signer.getAddress())
+
       const ERC721_ABI = ["function safeTransferFrom(address from, address to, uint256 tokenId)"]
 
-      // Send each NFT
       for (const nft of nftData || []) {
-        const contract = new ethers.Contract(nft.contract.address, ERC721_ABI, signer)
+        console.log("[v0] Sending NFT:", nft.tokenId, "from contract:", nft.contractAddress)
+        const contract = new ethers.Contract(nft.contractAddress, ERC721_ABI, signer)
         const tx = await contract.safeTransferFrom(walletAddress, recipient, nft.tokenId)
         console.log("[v0] Transaction sent:", tx.hash)
         await tx.wait()

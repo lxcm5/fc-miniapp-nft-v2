@@ -77,6 +77,17 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
               <span className="text-sm text-muted-foreground">Chain</span>
               <span className="text-sm font-medium text-foreground">Base</span>
             </div>
+            <div className="flex justify-between items-start border-t border-border pt-3">
+              <span className="text-sm text-muted-foreground">Explorer</span>
+              <a
+                href={`https://basescan.org/nft/${nft.contractAddress}/${nft.tokenId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                View on Basescan
+              </a>
+            </div>
           </div>
         </Card>
 
