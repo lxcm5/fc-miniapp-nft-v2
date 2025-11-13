@@ -1,18 +1,23 @@
 "use client"
-
-import { WalletBalance } from "@/components/wallet-balance"
 import { NFTGrid } from "@/components/nft-grid"
 import { useFarcaster } from "@/app/providers"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { ArrowLeft } from "lucide-react"
 
-export default function Page() {
+export default function HiddenPage() {
   const { isSDKLoaded } = useFarcaster()
   const [gridMode, setGridMode] = useState<2 | 3 | 4 | "list">(3)
   const [selectedNFTs, setSelectedNFTs] = useState<string[]>([])
   const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [hiddenCount, setHiddenCount] = useState(0)
   const router = useRouter()
+
+  useEffect(() => {
+    const hiddenNFTs = JSON.parse(localStorage.getItem("hidden_nfts") || "[]")
+    setHiddenCount(hiddenNFTs.length)
+  }, [])
 
   const cycleGridMode = () => {
     if (gridMode === 2) setGridMode(3)
@@ -26,9 +31,9 @@ export default function Page() {
     alert("Send functionality coming soon!")
   }
 
-  const handleHideSelected = () => {
+  const handleUnhideSelected = () => {
     const hiddenNFTs = JSON.parse(localStorage.getItem("hidden_nfts") || "[]")
-    const updatedHidden = [...new Set([...hiddenNFTs, ...selectedNFTs])]
+    const updatedHidden = hiddenNFTs.filter((id: string) => !selectedNFTs.includes(id))
     localStorage.setItem("hidden_nfts", JSON.stringify(updatedHidden))
     setSelectedNFTs([])
     setIsSelectionMode(false)
@@ -39,11 +44,18 @@ export default function Page() {
     <div className="min-h-screen bg-background pb-20">
       <div className="max-w-6xl mx-auto px-4 py-4">
         <header className="mb-5.5">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back</span>
+          </button>
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-[1.35rem] font-bold text-foreground">NFT aWallet</h1>
-            <Button variant="outline" size="sm" onClick={() => router.push("/hidden")} className="bg-transparent">
-              Hidden
-            </Button>
+            <div>
+              <h1 className="text-[1.35rem] font-bold text-foreground">Hidden NFTs</h1>
+              <p className="text-sm text-muted-foreground mt-1">{hiddenCount} hidden NFTs</p>
+            </div>
           </div>
         </header>
 
@@ -51,13 +63,9 @@ export default function Page() {
           <div className="mb-4 text-sm text-muted-foreground">Loading Farcaster SDK...</div>
         ) : (
           <>
-            <div className="mb-5.5">
-              <WalletBalance />
-            </div>
-
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-semibold text-foreground">My NFT Collection</h2>
+                <h2 className="text-xl font-semibold text-foreground">Hidden Collection</h2>
                 <Button
                   variant="outline"
                   size="sm"
@@ -97,7 +105,7 @@ export default function Page() {
                 setSelectedNFTs={setSelectedNFTs}
                 isSelectionMode={isSelectionMode}
                 setIsSelectionMode={setIsSelectionMode}
-                isHiddenPage={false}
+                isHiddenPage={true}
               />
             </div>
           </>
@@ -110,8 +118,8 @@ export default function Page() {
             <Button onClick={handleSendSelected} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               Send ({selectedNFTs.length})
             </Button>
-            <Button onClick={handleHideSelected} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              Hide ({selectedNFTs.length})
+            <Button onClick={handleUnhideSelected} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              Unhide ({selectedNFTs.length})
             </Button>
           </div>
         </div>

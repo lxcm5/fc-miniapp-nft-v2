@@ -6,16 +6,32 @@ import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 
-export default function NFTDetailPage({
-  params,
-}: {
-  params: { contract: string; tokenId: string }
-}) {
+export default function NFTDetailPage({ params }: { params: { contract: string; tokenId: string } }) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const nftDataString = searchParams.get("data")
   const nft = nftDataString ? JSON.parse(decodeURIComponent(nftDataString)) : null
+
+  const handleHide = () => {
+    if (!nft) return
+
+    if (nft.isHiddenPage) {
+      // Unhide
+      const hiddenNFTs = JSON.parse(localStorage.getItem("hidden_nfts") || "[]")
+      const updated = hiddenNFTs.filter((id: string) => id !== nft.id)
+      localStorage.setItem("hidden_nfts", JSON.stringify(updated))
+    } else {
+      // Hide
+      const hiddenNFTs = JSON.parse(localStorage.getItem("hidden_nfts") || "[]")
+      if (!hiddenNFTs.includes(nft.id)) {
+        hiddenNFTs.push(nft.id)
+        localStorage.setItem("hidden_nfts", JSON.stringify(hiddenNFTs))
+      }
+    }
+
+    router.back()
+  }
 
   if (!nft) {
     return (
@@ -88,8 +104,8 @@ export default function NFTDetailPage({
             <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">List for sale</Button>
             <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">Send</Button>
           </div>
-          <Button variant="outline" className="w-full bg-transparent">
-            Hide
+          <Button variant="outline" className="w-full bg-transparent" onClick={handleHide}>
+            {nft.isHiddenPage ? "Unhide" : "Hide"}
           </Button>
         </div>
       </div>

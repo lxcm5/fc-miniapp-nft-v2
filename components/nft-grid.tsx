@@ -5,6 +5,7 @@ import Image from "next/image"
 import { useFarcaster } from "@/app/providers"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Check } from "lucide-react"
 
 interface NFT {
   id: string
@@ -18,9 +19,21 @@ interface NFT {
 
 interface NFTGridProps {
   gridMode: 2 | 3 | 4 | "list"
+  selectedNFTs: string[]
+  setSelectedNFTs: (ids: string[]) => void
+  isSelectionMode: boolean
+  setIsSelectionMode: (mode: boolean) => void
+  isHiddenPage: boolean
 }
 
-export function NFTGrid({ gridMode }: NFTGridProps) {
+export function NFTGrid({
+  gridMode,
+  selectedNFTs,
+  setSelectedNFTs,
+  isSelectionMode,
+  setIsSelectionMode,
+  isHiddenPage,
+}: NFTGridProps) {
   const { walletAddress, isWalletConnected } = useFarcaster()
   const [nfts, setNfts] = useState<NFT[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,25 +48,47 @@ export function NFTGrid({ gridMode }: NFTGridProps) {
 
       try {
         setLoading(true)
-        const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/pSYF7FVv63ho_VUplwQrK/getNFTsForOwner?owner=${walletAddress}&withMetadata=true&pageSize=12`
+        let allNFTs: any[] = []
+        let pageKey: string | undefined = undefined
 
-        const response = await fetch(alchemyUrl)
-        const data = await response.json()
+        do {
+          const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/pSYF7FVv63ho_VUplwQrK/getNFTsForOwner?owner=${walletAddress}&withMetadata=true&pageSize=100${pageKey ? `&pageKey=${pageKey}` : ""}`
 
-        if (data.ownedNfts && data.ownedNfts.length > 0) {
-          const formattedNFTs = data.ownedNfts.slice(0, 12).map((nft: any) => ({
-            id: `${nft.contract.address}-${nft.tokenId}`,
-            name: nft.name || nft.contract.name || "Unnamed NFT",
-            collection: nft.contract.name || "Unknown Collection",
-            image:
-              nft.image?.cachedUrl ||
-              nft.image?.thumbnailUrl ||
-              nft.image?.originalUrl ||
-              "/digital-art-collection.png",
-            tokenId: nft.tokenId,
-            contractAddress: nft.contract.address,
-            floorPrice: nft.contract.openSeaMetadata?.floorPrice?.toString() || "—",
-          }))
+          const response = await fetch(alchemyUrl)
+          const data = await response.json()
+
+          if (data.ownedNfts && data.ownedNfts.length > 0) {
+            allNFTs = [...allNFTs, ...data.ownedNfts]
+          }
+
+          pageKey = data.pageKey
+        } while (pageKey)
+
+        if (allNFTs.length > 0) {
+          const hiddenNFTs = JSON.parse(localStorage.getItem("hidden_nfts") || "[]")
+
+          const formattedNFTs = allNFTs
+            .map((nft: any) => ({
+              id: `${nft.contract.address}-${nft.tokenId}`,
+              name: nft.name || nft.contract.name || "Unnamed NFT",
+              collection: nft.contract.name || "Unknown Collection",
+              image:
+                nft.image?.cachedUrl ||
+                nft.image?.thumbnailUrl ||
+                nft.image?.originalUrl ||
+                "/digital-art-collection.png",
+              tokenId: nft.tokenId,
+              contractAddress: nft.contract.address,
+              floorPrice: nft.contract.openSeaMetadata?.floorPrice?.toString() || "—",
+            }))
+            .filter((nft: NFT) => {
+              if (isHiddenPage) {
+                return hiddenNFTs.includes(nft.id)
+              } else {
+                return !hiddenNFTs.includes(nft.id)
+              }
+            })
+
           setNfts(formattedNFTs)
         } else {
           setNfts([])
@@ -67,7 +102,7 @@ export function NFTGrid({ gridMode }: NFTGridProps) {
     }
 
     fetchNFTs()
-  }, [walletAddress, isWalletConnected])
+  }, [walletAddress, isWalletConnected, isHiddenPage])
 
   const gridCols =
     gridMode === "list"
@@ -79,8 +114,29 @@ export function NFTGrid({ gridMode }: NFTGridProps) {
           : "grid-cols-4"
 
   const handleNFTClick = (nft: NFT) => {
-    const nftData = encodeURIComponent(JSON.stringify(nft))
-    router.push(`/nft/${nft.contractAddress}/${nft.tokenId}?data=${nftData}`)
+    if (isSelectionMode) {
+      toggleSelection(nft.id)
+    } else {
+      const nftData = encodeURIComponent(JSON.stringify({ ...nft, isHiddenPage }))
+      router.push(`/nft/${nft.contractAddress}/${nft.tokenId}?data=${nftData}`)
+    }
+  }
+
+  const handleLongPress = (nftId: string) => {
+    setIsSelectionMode(true)
+    setSelectedNFTs([nftId])
+  }
+
+  const toggleSelection = (nftId: string) => {
+    if (selectedNFTs.includes(nftId)) {
+      const updated = selectedNFTs.filter((id) => id !== nftId)
+      setSelectedNFTs(updated)
+      if (updated.length === 0) {
+        setIsSelectionMode(false)
+      }
+    } else {
+      setSelectedNFTs([...selectedNFTs, nftId])
+    }
   }
 
   if (loading) {
@@ -89,7 +145,7 @@ export function NFTGrid({ gridMode }: NFTGridProps) {
         {[...Array(6)].map((_, i) => (
           <Card key={i} className="overflow-hidden border-border bg-card">
             <div className="aspect-square relative bg-muted animate-pulse" />
-            <div className="p-1">
+            <div className="p-2">
               <div className="h-4 bg-muted animate-pulse rounded mb-1" />
               <div className="h-3 bg-muted animate-pulse rounded w-2/3" />
             </div>
@@ -110,12 +166,7 @@ export function NFTGrid({ gridMode }: NFTGridProps) {
   if (nfts.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        <p>No NFTs found in your wallet on Base network</p>
-        {walletAddress && (
-          <p className="text-xs mt-2">
-            Wallet: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-          </p>
-        )}
+        <p>{isHiddenPage ? "No hidden NFTs" : "No NFTs found in your wallet on Base network"}</p>
       </div>
     )
   }
@@ -123,45 +174,88 @@ export function NFTGrid({ gridMode }: NFTGridProps) {
   if (gridMode === "list") {
     return (
       <div className="space-y-2">
-        {nfts.map((nft) => (
-          <Card
-            key={nft.id}
-            className="overflow-hidden border-border hover:shadow-lg transition-shadow cursor-pointer bg-card"
-            onClick={() => handleNFTClick(nft)}
-          >
-            <div className="flex items-center gap-3 p-3">
-              <div className="w-20 h-20 relative bg-muted rounded flex-shrink-0">
-                <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover rounded" />
+        {nfts.map((nft) => {
+          const isSelected = selectedNFTs.includes(nft.id)
+          return (
+            <Card
+              key={nft.id}
+              className={`overflow-hidden border-border hover:shadow-lg transition-shadow cursor-pointer bg-card relative ${isSelected ? "ring-2 ring-primary" : ""}`}
+              onClick={() => handleNFTClick(nft)}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                handleLongPress(nft.id)
+              }}
+              onTouchStart={(e) => {
+                const timeout = setTimeout(() => handleLongPress(nft.id), 500)
+                ;(e.currentTarget as any).longPressTimeout = timeout
+              }}
+              onTouchEnd={(e) => {
+                clearTimeout((e.currentTarget as any).longPressTimeout)
+              }}
+            >
+              {isSelected && (
+                <div className="absolute top-2 right-2 z-10 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-primary-foreground" />
+                </div>
+              )}
+              <div className="flex items-center gap-3 p-3">
+                <div className="w-20 h-20 relative bg-muted rounded flex-shrink-0">
+                  <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover rounded" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm text-foreground truncate">{nft.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{nft.collection}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Floor: {nft.floorPrice} ETH</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm text-foreground truncate">{nft.name}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">{nft.collection}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Token ID: {nft.tokenId}</p>
-              </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          )
+        })}
       </div>
     )
   }
 
+  const showDescriptions = gridMode === 2
+
   return (
     <div className={`grid ${gridCols} gap-3`}>
-      {nfts.map((nft) => (
-        <Card
-          key={nft.id}
-          className="overflow-hidden border-border hover:shadow-lg transition-shadow cursor-pointer bg-card"
-          onClick={() => handleNFTClick(nft)}
-        >
-          <div className="aspect-square relative bg-muted">
-            <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover" />
-          </div>
-          <div className="p-1">
-            <h3 className="font-semibold text-xs text-foreground truncate">{nft.name}</h3>
-            <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{nft.collection}</p>
-          </div>
-        </Card>
-      ))}
+      {nfts.map((nft) => {
+        const isSelected = selectedNFTs.includes(nft.id)
+        return (
+          <Card
+            key={nft.id}
+            className={`overflow-hidden border-border hover:shadow-lg transition-shadow cursor-pointer bg-card relative ${isSelected ? "ring-2 ring-primary" : ""}`}
+            onClick={() => handleNFTClick(nft)}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              handleLongPress(nft.id)
+            }}
+            onTouchStart={(e) => {
+              const timeout = setTimeout(() => handleLongPress(nft.id), 500)
+              ;(e.currentTarget as any).longPressTimeout = timeout
+            }}
+            onTouchEnd={(e) => {
+              clearTimeout((e.currentTarget as any).longPressTimeout)
+            }}
+          >
+            {isSelected && (
+              <div className="absolute top-2 right-2 z-10 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                <Check className="w-4 h-4 text-primary-foreground" />
+              </div>
+            )}
+            <div className="aspect-square relative bg-muted">
+              <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover" />
+            </div>
+            {showDescriptions && (
+              <div className="p-2 space-y-1">
+                <h3 className="font-semibold text-xs text-foreground truncate leading-tight">{nft.name}</h3>
+                <p className="text-[10px] text-muted-foreground truncate leading-tight">{nft.collection}</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Floor: {nft.floorPrice} ETH</p>
+              </div>
+            )}
+          </Card>
+        )
+      })}
     </div>
   )
 }
