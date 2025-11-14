@@ -90,11 +90,17 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
   const handleSend = async () => {
     setIsSending(true)
-    console.log("[v0] Sending NFTs to:", recipient)
+    console.log("[v0] Starting NFT send process...")
+    console.log("[v0] Recipient:", recipient)
+    console.log("[v0] NFT IDs:", nftIds)
     console.log("[v0] NFT data:", nftData)
 
     try {
       const sdk = (await import("@farcaster/frame-sdk")).default
+
+      console.log("[v0] SDK loaded:", !!sdk)
+      console.log("[v0] SDK wallet:", !!sdk?.wallet)
+      console.log("[v0] SDK ethProvider:", !!sdk?.wallet?.ethProvider)
 
       if (!sdk?.wallet?.ethProvider) {
         throw new Error("No wallet found - Please open in Farcaster app")
@@ -103,21 +109,25 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       const { ethers } = await import("ethers")
       const provider = new ethers.BrowserProvider(sdk.wallet.ethProvider)
       const signer = await provider.getSigner()
+      const signerAddress = await signer.getAddress()
 
-      console.log("[v0] Using Farcaster wallet, signer address:", await signer.getAddress())
+      console.log("[v0] Signer address:", signerAddress)
+      console.log("[v0] Wallet address from context:", walletAddress)
 
       const ERC721_ABI = [
-        "function safeTransferFrom(address from, address to, uint256 tokenId) external"
+        "function transferFrom(address from, address to, uint256 tokenId) external"
       ]
 
       for (const nft of nftData || []) {
-        console.log("[v0] Processing NFT:", {
-          contract: nft.contract?.address || nft.contractAddress,
-          tokenId: nft.tokenId || nft.token_id
-        })
-        
         const contractAddress = nft.contract?.address || nft.contractAddress
         const tokenId = nft.tokenId || nft.token_id
+        
+        console.log("[v0] Processing NFT transfer:", {
+          contract: contractAddress,
+          tokenId: tokenId,
+          from: signerAddress,
+          to: recipient
+        })
         
         if (!contractAddress || !tokenId) {
           console.error("[v0] Missing contract or tokenId:", nft)
@@ -126,22 +136,26 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
         const contract = new ethers.Contract(contractAddress, ERC721_ABI, signer)
 
-        console.log("[v0] Calling safeTransferFrom:", {
-          from: walletAddress,
-          to: recipient,
-          tokenId: tokenId
-        })
-
-        const tx = await contract.safeTransferFrom(walletAddress, recipient, tokenId)
-        console.log("[v0] Transaction sent:", tx.hash)
+        console.log("[v0] Calling transferFrom...")
+        
+        const tx = await contract.transferFrom(signerAddress, recipient, tokenId)
+        console.log("[v0] Transaction sent, hash:", tx.hash)
         
         const receipt = await tx.wait()
-        console.log("[v0] Transaction confirmed:", receipt)
+        console.log("[v0] Transaction confirmed:", receipt.hash)
       }
 
+      console.log("[v0] All transfers completed successfully")
       setStep("success")
     } catch (error: any) {
-      console.error("[v0] Error sending NFT:", error)
+      console.error("[v0] Error during send:", error)
+      console.error("[v0] Error details:", {
+        message: error?.message,
+        reason: error?.reason,
+        code: error?.code,
+        data: error?.data
+      })
+      
       const errorMsg = error?.reason || error?.message || "Unknown error"
       alert(`Error sending NFT: ${errorMsg}`)
       setIsSending(false)

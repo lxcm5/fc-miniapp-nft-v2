@@ -64,57 +64,46 @@ export function NFTGrid({
           pageKey = data.pageKey
         } while (pageKey)
 
+        console.log(`[v0] Total NFTs loaded: ${allNFTs.length}`)
+
         if (allNFTs.length > 0) {
           const hiddenNFTs = JSON.parse(localStorage.getItem("hidden_nfts") || "[]")
 
-          const checkReputation = async (contractAddress: string): Promise<string | null> => {
-            try {
-              const response = await fetch(
-                `https://api.basescan.org/api?module=contract&action=getsourcecode&address=${contractAddress}`
-              )
-              const data = await response.json()
-              
-              // Check if contract has suspicious/unsafe/spam reputation
-              if (data.result && data.result[0]) {
-                const reputation = data.result[0].Reputation
-                if (reputation === 'SUSPICIOUS' || reputation === 'UNSAFE' || reputation === 'SPAM') {
-                  console.log(`[v0] Auto-hiding NFT from contract ${contractAddress} due to ${reputation} reputation`)
-                  return reputation
-                }
-              }
-            } catch (error) {
-              console.error(`[v0] Error checking reputation for ${contractAddress}:`, error)
+          const formattedNFTs = allNFTs.map((nft: any) => {
+            const nftId = `${nft.contract.address}-${nft.tokenId}`
+            
+            const tokenIdNum = parseInt(nft.tokenId, 16)
+            if (tokenIdNum === 0 && !hiddenNFTs.includes(nftId)) {
+              console.log(`[v0] Auto-hiding NFT with tokenId = 0: ${nftId}`)
+              hiddenNFTs.push(nftId)
             }
-            return null
-          }
+            
+            const isSpam = nft.contract.isSpam || 
+                          nft.spam?.isSpam || 
+                          nft.name?.toLowerCase().includes('claim') ||
+                          nft.name?.toLowerCase().includes('reward') ||
+                          nft.name?.toLowerCase().includes('airdrop')
+                          
+            if (isSpam && !hiddenNFTs.includes(nftId)) {
+              console.log(`[v0] Auto-hiding spam NFT: ${nft.name}`)
+              hiddenNFTs.push(nftId)
+            }
+            
+            return {
+              id: nftId,
+              name: nft.name || nft.contract.name || "Unnamed NFT",
+              collection: nft.contract.name || "Unknown Collection",
+              image:
+                nft.image?.cachedUrl ||
+                nft.image?.thumbnailUrl ||
+                nft.image?.originalUrl ||
+                "/digital-art-collection.png",
+              tokenId: nft.tokenId,
+              contractAddress: nft.contract.address,
+              floorPrice: nft.contract.openSeaMetadata?.floorPrice?.toString() || "—",
+            }
+          })
 
-          const formattedNFTs = await Promise.all(
-            allNFTs.map(async (nft: any) => {
-              const nftId = `${nft.contract.address}-${nft.tokenId}`
-              const badReputation = await checkReputation(nft.contract.address)
-              
-              // Auto-hide NFTs with bad reputation
-              if (badReputation && !hiddenNFTs.includes(nftId)) {
-                hiddenNFTs.push(nftId)
-              }
-              
-              return {
-                id: nftId,
-                name: nft.name || nft.contract.name || "Unnamed NFT",
-                collection: nft.contract.name || "Unknown Collection",
-                image:
-                  nft.image?.cachedUrl ||
-                  nft.image?.thumbnailUrl ||
-                  nft.image?.originalUrl ||
-                  "/digital-art-collection.png",
-                tokenId: nft.tokenId,
-                contractAddress: nft.contract.address,
-                floorPrice: nft.contract.openSeaMetadata?.floorPrice?.toString() || "—",
-              }
-            })
-          )
-
-          // Save updated hidden NFTs list
           localStorage.setItem("hidden_nfts", JSON.stringify(hiddenNFTs))
 
           const filteredNFTs = formattedNFTs.filter((nft: NFT) => {
@@ -125,6 +114,7 @@ export function NFTGrid({
             }
           })
 
+          console.log(`[v0] Filtered NFTs: ${filteredNFTs.length}, Hidden: ${hiddenNFTs.length}`)
           setNfts(filteredNFTs)
         } else {
           setNfts([])
