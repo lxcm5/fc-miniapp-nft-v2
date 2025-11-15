@@ -3,8 +3,8 @@
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
-import { useRouter, useSearchParams } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ArrowLeft } from 'lucide-react'
 import { SendNFTModal } from "@/components/send-nft-modal"
 import { useState } from "react"
 
@@ -91,9 +91,9 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
           </div>
         </Card>
 
-        <Card className="p-4 mb-6 bg-card border-border">
-          <h3 className="text-sm font-medium text-foreground mb-3">View on marketplaces</h3>
-          <div className="space-y-2">
+        <Card className="p-3 mb-6 bg-card border-border">
+          <h3 className="text-sm font-medium text-foreground mb-2">View on marketplaces</h3>
+          <div className="space-y-1">
             <a
               href={`https://opensea.io/assets/base/${nft.contractAddress}/${nft.tokenId}`}
               target="_blank"

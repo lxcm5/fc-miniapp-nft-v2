@@ -63,7 +63,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
               username: user.username,
               displayName: user.display_name || user.username,
               pfpUrl: user.pfp_url,
-              ethAddress: user.custody_address
+              ethAddress: user.verified_addresses?.eth_addresses?.[0] || user.custody_address
             }))
             
             console.log("[v0] Found users by address:", users)
@@ -103,7 +103,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
             username: user.username,
             displayName: user.display_name || user.username,
             pfpUrl: user.pfp_url,
-            ethAddress: user.custody_address
+            ethAddress: user.verified_addresses?.eth_addresses?.[0] || user.custody_address
           })).filter((u: FarcasterUser) => u.ethAddress)
           
           console.log("[v0] Parsed users:", users)
@@ -158,10 +158,11 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
           continue
         }
 
+        const normalizedContract = contractAddress.toLowerCase()
         const normalizedTokenId = typeof tokenId === 'string' ? tokenId : tokenId.toString()
-        const tokenCAIP = `eip155:8453:erc721:${contractAddress.toLowerCase()}:${normalizedTokenId}`
+        const tokenCAIP = `eip155:8453/erc721:${normalizedContract}/${normalizedTokenId}`
         
-        console.log("[v0] Token CAIP:", tokenCAIP)
+        console.log("[v0] Token CAIP-19 format:", tokenCAIP)
         console.log("[v0] Calling sdk.actions.sendToken...")
 
         const result = await sdk.actions.sendToken({
