@@ -45,7 +45,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         
         try {
           const response = await fetch(
-            `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${recipient}`,
+            `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${recipient}&address_types=custody_address,verified_address`,
             {
               headers: {
                 'accept': 'application/json',
@@ -58,13 +58,22 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
           console.log("[v0] Address search response:", data)
 
           if (data && Object.keys(data).length > 0) {
-            const users = Object.values(data).flat().map((user: any) => ({
-              fid: user.fid,
-              username: user.username,
-              displayName: user.display_name || user.username,
-              pfpUrl: user.pfp_url,
-              ethAddress: user.verified_addresses?.eth_addresses?.[0] || user.custody_address
-            }))
+            const users = Object.values(data).flat().map((user: any) => {
+              const primaryWallet = user.custody_address || user.verified_addresses?.eth_addresses?.[0]
+              console.log("[v0] User wallet addresses:", {
+                custody: user.custody_address,
+                verified: user.verified_addresses?.eth_addresses,
+                selected: primaryWallet
+              })
+              
+              return {
+                fid: user.fid,
+                username: user.username,
+                displayName: user.display_name || user.username,
+                pfpUrl: user.pfp_url,
+                ethAddress: primaryWallet
+              }
+            })
             
             console.log("[v0] Found users by address:", users)
             setSearchResults(users)
@@ -98,13 +107,23 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         console.log("[v0] Search response:", data)
 
         if (data.result?.users && data.result.users.length > 0) {
-          const users = data.result.users.map((user: any) => ({
-            fid: user.fid,
-            username: user.username,
-            displayName: user.display_name || user.username,
-            pfpUrl: user.pfp_url,
-            ethAddress: user.verified_addresses?.eth_addresses?.[0] || user.custody_address
-          })).filter((u: FarcasterUser) => u.ethAddress)
+          const users = data.result.users.map((user: any) => {
+            const primaryWallet = user.custody_address || user.verified_addresses?.eth_addresses?.[0]
+            console.log("[v0] User wallet addresses:", {
+              username: user.username,
+              custody: user.custody_address,
+              verified: user.verified_addresses?.eth_addresses,
+              selected: primaryWallet
+            })
+            
+            return {
+              fid: user.fid,
+              username: user.username,
+              displayName: user.display_name || user.username,
+              pfpUrl: user.pfp_url,
+              ethAddress: primaryWallet
+            }
+          }).filter((u: FarcasterUser) => u.ethAddress)
           
           console.log("[v0] Parsed users:", users)
           setSearchResults(users)
@@ -132,59 +151,104 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
   const handleSend = async () => {
     setIsSending(true)
-    console.log("[v0] Starting NFT send using Farcaster SDK...")
-    console.log("[v0] Recipient:", recipient)
-    console.log("[v0] NFT data:", nftData)
+    console.log("[v0] ========== STARTING NFT SEND ==========")
+    console.log("[v0] Recipient address:", recipient)
+    console.log("[v0] Number of NFTs to send:", nftData?.length || 0)
+    console.log("[v0] NFT data received:", JSON.stringify(nftData, null, 2))
 
     try {
       const sdk = (await import("@farcaster/frame-sdk")).default
+      console.log("[v0] Farcaster SDK imported:", !!sdk)
+      console.log("[v0] SDK.actions available:", !!sdk?.actions)
+      console.log("[v0] SDK.actions.sendToken available:", !!sdk?.actions?.sendToken)
 
       if (!sdk?.actions?.sendToken) {
         throw new Error("Farcaster SDK sendToken not available")
       }
 
       for (const nft of nftData || []) {
-        const contractAddress = nft.contract?.address || nft.contractAddress
-        const tokenId = nft.tokenId || nft.token_id
+        console.log("[v0] ========== PROCESSING NFT ==========")
+        console.log("[v0] Raw NFT object:", JSON.stringify(nft, null, 2))
         
-        console.log("[v0] Sending NFT via SDK:", {
-          contract: contractAddress,
-          tokenId: tokenId,
-          recipient: recipient
-        })
+        const contractAddress = nft.contract?.address || nft.contractAddress || nft.contract_address
+        const tokenId = nft.tokenId || nft.token_id || nft.id?.tokenId
+        
+        console.log("[v0] Extracted contract address:", contractAddress)
+        console.log("[v0] Extracted token ID:", tokenId)
+        console.log("[v0] Token ID type:", typeof tokenId)
         
         if (!contractAddress || !tokenId) {
-          console.error("[v0] Missing contract or tokenId:", nft)
-          continue
+          console.error("[v0] ERROR: Missing contract or tokenId")
+          console.error("[v0] Contract:", contractAddress)
+          console.error("[v0] TokenId:", tokenId)
+          throw new Error("Missing contract address or token ID")
         }
 
         const normalizedContract = contractAddress.toLowerCase()
+        const normalizedRecipient = recipient.toLowerCase()
         const normalizedTokenId = typeof tokenId === 'string' ? tokenId : tokenId.toString()
-        const tokenCAIP = `eip155:8453/erc721:${normalizedContract}/${normalizedTokenId}`
         
-        console.log("[v0] Token CAIP-19 format:", tokenCAIP)
-        console.log("[v0] Calling sdk.actions.sendToken...")
+        const tokenFormats = [
+          `eip155:8453/erc721:${normalizedContract}/${normalizedTokenId}`,
+          `eip155:8453:erc721:${normalizedContract}:${normalizedTokenId}`,
+          `eip155:8453/erc721/${normalizedContract}/${normalizedTokenId}`
+        ]
+        
+        console.log("[v0] Trying CAIP-19 formats:")
+        tokenFormats.forEach((format, i) => console.log(`  [${i}]:`, format))
 
-        const result = await sdk.actions.sendToken({
-          token: tokenCAIP,
-          amount: "1",
-          recipientAddress: recipient.toLowerCase()
-        })
+        let lastError = null
+        
+        for (let i = 0; i < tokenFormats.length; i++) {
+          const tokenCAIP = tokenFormats[i]
+          console.log(`[v0] ========== ATTEMPT ${i + 1}/${tokenFormats.length} ==========`)
+          console.log("[v0] Token CAIP-19:", tokenCAIP)
+          console.log("[v0] Recipient:", normalizedRecipient)
+          console.log("[v0] Amount:", "1")
+          
+          try {
+            console.log("[v0] Calling sdk.actions.sendToken...")
+            const result = await sdk.actions.sendToken({
+              token: tokenCAIP,
+              amount: "1",
+              recipientAddress: normalizedRecipient
+            })
 
-        console.log("[v0] Send result:", result)
+            console.log("[v0] Send result:", JSON.stringify(result, null, 2))
+            console.log("[v0] Result.success:", result.success)
 
-        if (result.success) {
-          console.log("[v0] NFT sent successfully:", result.send.transaction)
-        } else {
-          console.error("[v0] Send failed:", result.reason, result.error)
-          throw new Error(`Send failed: ${result.reason} - ${result.error?.message || 'Unknown error'}`)
+            if (result.success) {
+              console.log("[v0] ✅ NFT SENT SUCCESSFULLY!")
+              console.log("[v0] Transaction:", result.send?.transaction)
+              break // Success, exit format loop
+            } else {
+              console.error("[v0] ❌ Send failed")
+              console.error("[v0] Reason:", result.reason)
+              console.error("[v0] Error:", result.error)
+              lastError = new Error(`${result.reason}: ${result.error?.message || 'Unknown error'}`)
+            }
+          } catch (error: any) {
+            console.error(`[v0] ❌ Exception on attempt ${i + 1}:`, error)
+            console.error("[v0] Error name:", error?.name)
+            console.error("[v0] Error message:", error?.message)
+            console.error("[v0] Error stack:", error?.stack)
+            lastError = error
+            
+            if (i === tokenFormats.length - 1) {
+              throw lastError
+            }
+            console.log(`[v0] Trying next format...`)
+          }
         }
       }
 
-      console.log("[v0] All NFTs sent successfully")
+      console.log("[v0] ========== ALL NFTs SENT ==========")
       setStep("success")
     } catch (error: any) {
-      console.error("[v0] Error during send:", error)
+      console.error("[v0] ========== FATAL ERROR ==========")
+      console.error("[v0] Error object:", error)
+      console.error("[v0] Error message:", error?.message)
+      console.error("[v0] Error stack:", error?.stack)
       const errorMsg = error?.message || "Unknown error"
       alert(`Error sending NFT: ${errorMsg}`)
       setIsSending(false)

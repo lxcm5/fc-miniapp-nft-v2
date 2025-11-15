@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import sdk, { type Context } from "@farcaster/frame-sdk"
+import sdk, { type Context } from "@farcaster/miniapp-sdk"
 
 interface FarcasterContextType {
   isSDKLoaded: boolean
