@@ -78,14 +78,15 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
           if (data && Object.keys(data).length > 0) {
             const users = Object.values(data).flat().map((user: any) => {
               const verifiedAddresses = user.verified_addresses?.eth_addresses || []
-              const primaryAddress = verifiedAddresses.find((addr: any) => addr.primary)?.address || verifiedAddresses[0]
+              const primaryAddr = verifiedAddresses.find((addr: any) => addr.primary === true)
+              const ethAddress = primaryAddr ? primaryAddr.address : user.custody_address
               
               return {
                 fid: user.fid,
                 username: user.username,
                 displayName: user.display_name || user.username,
                 pfpUrl: user.pfp_url,
-                ethAddress: primaryAddress || user.custody_address
+                ethAddress: ethAddress
               }
             })
             
@@ -120,14 +121,15 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         if (data.result?.users && data.result.users.length > 0) {
           const users = data.result.users.map((user: any) => {
             const verifiedAddresses = user.verified_addresses?.eth_addresses || []
-            const primaryAddress = verifiedAddresses.find((addr: any) => addr.primary)?.address || verifiedAddresses[0]
+            const primaryAddr = verifiedAddresses.find((addr: any) => addr.primary === true)
+            const ethAddress = primaryAddr ? primaryAddr.address : user.custody_address
             
             return {
               fid: user.fid,
               username: user.username,
               displayName: user.display_name || user.username,
               pfpUrl: user.pfp_url,
-              ethAddress: primaryAddress || user.custody_address
+              ethAddress: ethAddress
             }
           }).filter((u: FarcasterUser) => u.ethAddress)
           
@@ -437,13 +439,12 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
           </>
         ) : (
           <>
-            <DialogHeader>
-              <DialogTitle>Send Complete</DialogTitle>
-            </DialogHeader>
             <div className="space-y-4">
-              <div className="text-center py-8">
-                <div className="text-5xl mb-4">✅</div>
-                <p className="text-lg font-medium">Send complete</p>
+              <div className="text-center py-6">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <div className="text-xl">✅</div>
+                  <p className="text-lg font-medium">Send complete</p>
+                </div>
                 <p className="text-sm text-muted-foreground mt-2">
                   {nftIds.length} NFT(s) sent to {recipient.slice(0, 6)}...{recipient.slice(-4)}
                 </p>
