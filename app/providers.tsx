@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import sdk, { type Context } from "@farcaster/miniapp-sdk"
+import farcasterSdk, { type Context } from "@farcaster/miniapp-sdk"
 
 interface FarcasterContextType {
   isSDKLoaded: boolean
@@ -10,6 +10,7 @@ interface FarcasterContextType {
   ethBalance: string | null
   connectWallet: () => Promise<void>
   isWalletConnected: boolean
+  sdk: typeof farcasterSdk
 }
 
 const FarcasterContext = createContext<FarcasterContextType>({
@@ -19,6 +20,7 @@ const FarcasterContext = createContext<FarcasterContextType>({
   ethBalance: null,
   connectWallet: async () => {},
   isWalletConnected: false,
+  sdk: farcasterSdk,
 })
 
 export function useFarcaster() {
@@ -50,12 +52,12 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
       try {
         console.log("[v0] Initializing Farcaster SDK...")
 
-        sdk.actions.ready()
+        farcasterSdk.actions.ready()
         setIsSDKLoaded(true)
         console.log("[v0] SDK ready called immediately")
 
         try {
-          const frameContext = await sdk.context
+          const frameContext = await farcasterSdk.context
           console.log("[v0] Frame context loaded:", frameContext)
           setContext(frameContext)
 
@@ -82,7 +84,7 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error("[v0] Error loading SDK:", error)
-        sdk.actions.ready()
+        farcasterSdk.actions.ready()
         setIsSDKLoaded(true)
       }
     }
@@ -124,7 +126,7 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
   const connectWallet = async () => {
     try {
       console.log("[v0] Connect wallet called")
-      const result = await sdk.wallet.ethProvider.request({
+      const result = await farcasterSdk.wallet.ethProvider.request({
         method: "eth_requestAccounts",
       })
 
@@ -162,7 +164,7 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
 
   return (
     <FarcasterContext.Provider
-      value={{ isSDKLoaded, context, walletAddress, ethBalance, connectWallet, isWalletConnected }}
+      value={{ isSDKLoaded, context, walletAddress, ethBalance, connectWallet, isWalletConnected, sdk: farcasterSdk }}
     >
       {children}
     </FarcasterContext.Provider>
