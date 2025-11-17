@@ -10,7 +10,7 @@ interface FarcasterContextType {
   ethBalance: string | null
   connectWallet: () => Promise<void>
   isWalletConnected: boolean
-  sdk: typeof farcasterSdk
+  sdk: typeof farcasterSdk | null
 }
 
 const FarcasterContext = createContext<FarcasterContextType>({
@@ -20,7 +20,7 @@ const FarcasterContext = createContext<FarcasterContextType>({
   ethBalance: null,
   connectWallet: async () => {},
   isWalletConnected: false,
-  sdk: farcasterSdk,
+  sdk: null,
 })
 
 export function useFarcaster() {
@@ -33,6 +33,7 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [ethBalance, setEthBalance] = useState<string | null>(null)
   const [isWalletConnected, setIsWalletConnected] = useState(false)
+  const [sdkInstance, setSdkInstance] = useState<typeof farcasterSdk | null>(null)
 
   useEffect(() => {
     const savedAddress = localStorage.getItem("farcaster_wallet_address")
@@ -52,9 +53,10 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
       try {
         console.log("[v0] Initializing Farcaster SDK...")
 
+        setSdkInstance(farcasterSdk)
         farcasterSdk.actions.ready()
         setIsSDKLoaded(true)
-        console.log("[v0] SDK ready called immediately")
+        console.log("[v0] SDK ready called and instance saved")
 
         try {
           const frameContext = await farcasterSdk.context
@@ -84,6 +86,7 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error("[v0] Error loading SDK:", error)
+        setSdkInstance(farcasterSdk)
         farcasterSdk.actions.ready()
         setIsSDKLoaded(true)
       }
@@ -164,7 +167,15 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
 
   return (
     <FarcasterContext.Provider
-      value={{ isSDKLoaded, context, walletAddress, ethBalance, connectWallet, isWalletConnected, sdk: farcasterSdk }}
+      value={{ 
+        isSDKLoaded, 
+        context, 
+        walletAddress, 
+        ethBalance, 
+        connectWallet, 
+        isWalletConnected, 
+        sdk: sdkInstance || farcasterSdk 
+      }}
     >
       {children}
     </FarcasterContext.Provider>

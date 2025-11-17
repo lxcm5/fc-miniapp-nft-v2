@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState, useEffect } from "react"
 import { useFarcaster } from "@/app/providers"
+import farcasterSdk from "@farcaster/miniapp-sdk"
 
 interface SendNFTModalProps {
   isOpen: boolean
@@ -151,20 +152,13 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
   const handleSend = async () => {
     console.log("[v0] handleSend called")
-    console.log("[v0] SDK available:", !!sdk)
+    console.log("[v0] Active SDK available:", !!sdk)
     console.log("[v0] SDK actions:", !!sdk?.actions)
     console.log("[v0] sendToken function:", !!sdk?.actions?.sendToken)
     
     setIsSending(true)
 
     try {
-      if (!sdk) {
-        console.error("[v0] SDK not available in context")
-        alert("Farcaster SDK not initialized. Please refresh and try again.")
-        setIsSending(false)
-        return
-      }
-
       if (!sdk?.actions?.sendToken) {
         console.error("[v0] sendToken not available on SDK")
         alert("Mini app must be opened in Warpcast with connected wallet.")
@@ -190,8 +184,8 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
         const numericTokenId = 
           typeof rawTokenId === "string" && rawTokenId.startsWith("0x")
-            ? BigInt(rawTokenId).toString() // Convert hex to decimal
-            : rawTokenId.toString() // Already decimal
+            ? BigInt(rawTokenId).toString()
+            : rawTokenId.toString()
 
         console.log("[v0] Numeric token ID:", numericTokenId)
 
