@@ -29,7 +29,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
   const [searchResults, setSearchResults] = useState<FarcasterUser[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isSending, setIsSending] = useState(false)
-  const { walletAddress, sdk } = useFarcaster()
+  const { walletAddress } = useFarcaster()
 
   const myVerifiedAddresses = [walletAddress].filter(Boolean)
 
@@ -149,7 +149,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       console.log("[v0] Modal isOpen:", isOpen)
       console.log("[v0] NFT IDs:", nftIds)
       console.log("[v0] NFT data:", nftData)
-      console.log("[v0] SDK from context:", !!sdk)
+      console.log("[v0] SDK from context:", !!farcasterSdk)
       console.log("[v0] Wallet address:", walletAddress)
       
       if (nftData && nftData.length > 0) {
@@ -162,7 +162,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         })
       }
     }
-  }, [isOpen, nftData, sdk, walletAddress, nftIds])
+  }, [isOpen, nftData, walletAddress, nftIds])
 
   const handleSelectRecipient = (address: string, user?: FarcasterUser) => {
     setRecipient(address)
@@ -186,8 +186,14 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         return
       }
 
-      if (!sdk?.actions?.sendTransaction) {
+      const activeSdk = farcasterSdk
+      
+      console.log("[v0] Using SDK:", activeSdk)
+      console.log("[v0] SDK has sendTransaction:", !!activeSdk?.actions?.sendTransaction)
+
+      if (!activeSdk?.actions?.sendTransaction) {
         console.error("[v0] ERROR: sendTransaction not available on SDK")
+        console.error("[v0] Available SDK methods:", Object.keys(activeSdk?.actions || {}))
         alert("Mini app must be opened in Warpcast with connected wallet.")
         setIsSending(false)
         return
@@ -249,7 +255,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         console.log("[v0] ====== Sending transaction via SDK ======")
         
         try {
-          const result = await sdk.actions.sendTransaction({
+          const result = await activeSdk.actions.sendTransaction({
             chainId: "eip155:8453",
             to: contractAddress,
             data: encodedData,
