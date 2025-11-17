@@ -143,6 +143,27 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
     return () => clearTimeout(timeoutId)
   }, [recipient])
 
+  useEffect(() => {
+    if (isOpen) {
+      console.log("[v0] ====== SendNFTModal OPENED ======")
+      console.log("[v0] Modal isOpen:", isOpen)
+      console.log("[v0] NFT IDs:", nftIds)
+      console.log("[v0] NFT data:", nftData)
+      console.log("[v0] SDK from context:", !!sdk)
+      console.log("[v0] Wallet address:", walletAddress)
+      
+      if (nftData && nftData.length > 0) {
+        nftData.forEach((nft, index) => {
+          console.log(`[v0] NFT ${index}:`, {
+            contractAddress: nft.contractAddress || nft.contract?.address,
+            tokenId: nft.tokenId || nft.token_id,
+            fullObject: nft
+          })
+        })
+      }
+    }
+  }, [isOpen, nftData, sdk, walletAddress, nftIds])
+
   const handleSelectRecipient = (address: string, user?: FarcasterUser) => {
     setRecipient(address)
     setSelectedUser(user || null)
@@ -151,6 +172,8 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
   }
 
   const handleSend = async () => {
+    console.log("[v0] ====== handleSend CALLED ======")
+    console.log("[v0] Button clicked, starting send process...")
     console.log("[v0] ====== handleSend START ======")
     console.log("[v0] SDK available:", !!sdk)
     console.log("[v0] SDK object:", sdk)
@@ -187,8 +210,14 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         console.log("[v0] ====== Processing NFT ======")
         console.log("[v0] Full NFT object:", JSON.stringify(nft, null, 2))
         
-        const contractAddress = nft.contract?.address || nft.contractAddress || nft.contract_address
+        const contractAddress = nft.contractAddress || nft.contract?.address || nft.contract_address
         const rawTokenId = nft.tokenId || nft.token_id || nft.id?.tokenId
+        
+        console.log("[v0] Contract address (direct):", nft.contractAddress)
+        console.log("[v0] Contract address (nested):", nft.contract?.address)
+        console.log("[v0] Token ID (direct):", nft.tokenId)
+        console.log("[v0] Final contract:", contractAddress)
+        console.log("[v0] Final tokenId:", rawTokenId)
         
         console.log("[v0] Contract address:", contractAddress)
         console.log("[v0] Contract type:", typeof contractAddress)
