@@ -173,16 +173,6 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
   const handleSend = async () => {
     console.log("[v0] ====== handleSend CALLED ======")
-    console.log("[v0] Button clicked, starting send process...")
-    console.log("[v0] ====== handleSend START ======")
-    console.log("[v0] SDK available:", !!sdk)
-    console.log("[v0] SDK object:", sdk)
-    console.log("[v0] sendToken function:", !!sdk?.actions?.sendToken)
-    console.log("[v0] Recipient value:", recipient)
-    console.log("[v0] Recipient type:", typeof recipient)
-    console.log("[v0] Is recipient address:", recipient.startsWith("0x"))
-    console.log("[v0] Selected user:", selectedUser)
-    console.log("[v0] NFT data:", nftData)
     
     setIsSending(true)
 
@@ -196,10 +186,16 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         return
       }
 
-      if (!sdk?.actions?.sendToken) {
-        console.error("[v0] ERROR: sendToken not available on SDK")
-        console.log("[v0] Attempting fallback to direct transaction...")
+      if (!sdk?.actions?.sendTransaction) {
+        console.error("[v0] ERROR: sendTransaction not available on SDK")
         alert("Mini app must be opened in Warpcast with connected wallet.")
+        setIsSending(false)
+        return
+      }
+
+      if (!walletAddress) {
+        console.error("[v0] ERROR: Wallet address not available")
+        alert("Wallet not connected")
         setIsSending(false)
         return
       }
@@ -208,83 +204,72 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
       for (const nft of nftData || []) {
         console.log("[v0] ====== Processing NFT ======")
-        console.log("[v0] Full NFT object:", JSON.stringify(nft, null, 2))
         
         const contractAddress = nft.contractAddress || nft.contract?.address || nft.contract_address
         const rawTokenId = nft.tokenId || nft.token_id || nft.id?.tokenId
         
-        console.log("[v0] Contract address (direct):", nft.contractAddress)
-        console.log("[v0] Contract address (nested):", nft.contract?.address)
-        console.log("[v0] Token ID (direct):", nft.tokenId)
-        console.log("[v0] Final contract:", contractAddress)
-        console.log("[v0] Final tokenId:", rawTokenId)
-        
         console.log("[v0] Contract address:", contractAddress)
-        console.log("[v0] Contract type:", typeof contractAddress)
         console.log("[v0] Raw token ID:", rawTokenId)
-        console.log("[v0] Token ID type:", typeof rawTokenId)
         
         if (!contractAddress || !rawTokenId) {
-          console.error("[v0] ERROR: Missing data")
-          console.error("[v0] - Contract:", contractAddress)
-          console.error("[v0] - TokenId:", rawTokenId)
+          console.error("[v0] ERROR: Missing contract or tokenId")
           throw new Error("Missing contract address or token ID")
         }
 
-        let numericTokenId: string
+        // Convert tokenId to hex format for encoding
+        let tokenIdHex: string
         if (typeof rawTokenId === "string" && rawTokenId.startsWith("0x")) {
-          console.log("[v0] Converting hex tokenId to decimal")
-          numericTokenId = BigInt(rawTokenId).toString()
+          tokenIdHex = rawTokenId
         } else {
-          numericTokenId = rawTokenId.toString()
+          tokenIdHex = "0x" + BigInt(rawTokenId).toString(16)
         }
 
-        console.log("[v0] Numeric token ID:", numericTokenId)
+        console.log("[v0] Token ID hex:", tokenIdHex)
+        console.log("[v0] From:", walletAddress)
+        console.log("[v0] To:", normalizedRecipient)
 
-        const normalizedContract = contractAddress.toLowerCase()
+        // Encode safeTransferFrom(address from, address to, uint256 tokenId)
+        // Function selector: 0x42842e0e
+        const functionSelector = "0x42842e0e"
         
-        const tokenCAIP_slashes = `eip155:8453/erc721:${normalizedContract}/${numericTokenId}`
-        const tokenCAIP_colons = `eip155:8453:erc721:${normalizedContract}:${numericTokenId}`
+        // Pad addresses to 32 bytes (64 hex chars)
+        const fromPadded = walletAddress.slice(2).padStart(64, '0')
+        const toPadded = normalizedRecipient.slice(2).padStart(64, '0')
+        const tokenIdPadded = tokenIdHex.slice(2).padStart(64, '0')
         
-        console.log("[v0] ====== SENDING NFT ======")
-        console.log("[v0] Token CAIP-19 (slashes):", tokenCAIP_slashes)
-        console.log("[v0] Token CAIP-19 (colons):", tokenCAIP_colons)
-        console.log("[v0] Recipient:", normalizedRecipient)
-        console.log("[v0] Chain ID: 8453 (Base mainnet)")
-        console.log("[v0] Amount: 1")
-        console.log("[v0] Calling sdk.actions.sendToken with slashes format...")
+        const encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded
+        
+        console.log("[v0] ====== Encoded transaction data ======")
+        console.log("[v0] Function selector:", functionSelector)
+        console.log("[v0] From (padded):", fromPadded)
+        console.log("[v0] To (padded):", toPadded)
+        console.log("[v0] TokenId (padded):", tokenIdPadded)
+        console.log("[v0] Full encoded data:", encodedData)
+
+        console.log("[v0] ====== Sending transaction via SDK ======")
         
         try {
-          const result = await sdk.actions.sendToken({
-            token: tokenCAIP_slashes,
-            amount: "1",
-            recipientAddress: normalizedRecipient
+          const result = await sdk.actions.sendTransaction({
+            chainId: "eip155:8453",
+            to: contractAddress,
+            data: encodedData,
+            value: "0"
           })
 
-          console.log("[v0] Send result:", result)
-          console.log("[v0] Result success:", result?.success)
+          console.log("[v0] Transaction result:", result)
+          console.log("[v0] Transaction hash:", result?.transactionHash)
 
-          if (!result.success) {
-            console.error("[v0] Send failed with slashes, trying colons format...")
-            
-            const result2 = await sdk.actions.sendToken({
-              token: tokenCAIP_colons,
-              amount: "1",
-              recipientAddress: normalizedRecipient
-            })
-            
-            console.log("[v0] Send result (colons):", result2)
-            
-            if (!result2.success) {
-              console.error("[v0] Both formats failed")
-              throw new Error(result2.error?.message || "Failed to send NFT")
-            }
+          if (!result.transactionHash) {
+            console.error("[v0] No transaction hash returned")
+            throw new Error("Transaction failed - no hash returned")
           }
-        } catch (sendError: any) {
-          console.error("[v0] sendToken threw exception:", sendError)
-          console.error("[v0] Error message:", sendError?.message)
-          console.error("[v0] Error stack:", sendError?.stack)
-          throw sendError
+          
+          console.log("[v0] ✅ NFT sent successfully!")
+          console.log("[v0] View on Basescan: https://basescan.org/tx/" + result.transactionHash)
+        } catch (txError: any) {
+          console.error("[v0] sendTransaction threw exception:", txError)
+          console.error("[v0] Error message:", txError?.message)
+          throw txError
         }
       }
 
@@ -292,9 +277,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       setStep("success")
     } catch (error: any) {
       console.error("[v0] ====== ERROR in handleSend ======")
-      console.error("[v0] Error object:", error)
-      console.error("[v0] Error message:", error?.message)
-      console.error("[v0] Error stack:", error?.stack)
+      console.error("[v0] Error:", error)
       alert(`Error sending NFT: ${error?.message || "Unknown error"}`)
       setIsSending(false)
       return
@@ -448,7 +431,15 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
                 <Button variant="outline" onClick={() => setStep("recipient")} disabled={isSending}>
                   Back
                 </Button>
-                <Button onClick={handleSend} className="bg-primary" disabled={isSending}>
+                <Button 
+                  onClick={() => {
+                    console.log("[v0] Send button CLICKED in confirm step")
+                    console.log("[v0] About to call handleSend...")
+                    handleSend()
+                  }} 
+                  className="bg-primary" 
+                  disabled={isSending}
+                >
                   {isSending ? "Sending..." : "Send"}
                 </Button>
               </div>
