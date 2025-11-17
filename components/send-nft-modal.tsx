@@ -29,9 +29,28 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
   const [searchResults, setSearchResults] = useState<FarcasterUser[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [recentRecipients, setRecentRecipients] = useState<FarcasterUser[]>([])
   const { walletAddress } = useFarcaster()
 
   const myVerifiedAddresses = [walletAddress].filter(Boolean)
+
+  useEffect(() => {
+    const loadRecents = () => {
+      try {
+        const stored = localStorage.getItem("recentNFTRecipients")
+        if (stored) {
+          const recents = JSON.parse(stored)
+          setRecentRecipients(recents)
+        }
+      } catch (error) {
+        console.error("Error loading recent recipients:", error)
+      }
+    }
+    
+    if (isOpen) {
+      loadRecents()
+    }
+  }, [isOpen])
 
   useEffect(() => {
     const searchUsers = async () => {
@@ -58,14 +77,15 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
           if (data && Object.keys(data).length > 0) {
             const users = Object.values(data).flat().map((user: any) => {
-              const primaryWallet = user.custody_address || user.verified_addresses?.eth_addresses?.[0]
+              const verifiedAddresses = user.verified_addresses?.eth_addresses || []
+              const primaryAddress = verifiedAddresses.find((addr: any) => addr.primary)?.address || verifiedAddresses[0]
               
               return {
                 fid: user.fid,
                 username: user.username,
                 displayName: user.display_name || user.username,
                 pfpUrl: user.pfp_url,
-                ethAddress: primaryWallet
+                ethAddress: primaryAddress || user.custody_address
               }
             })
             
@@ -99,14 +119,15 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
         if (data.result?.users && data.result.users.length > 0) {
           const users = data.result.users.map((user: any) => {
-            const primaryWallet = user.custody_address || user.verified_addresses?.eth_addresses?.[0]
+            const verifiedAddresses = user.verified_addresses?.eth_addresses || []
+            const primaryAddress = verifiedAddresses.find((addr: any) => addr.primary)?.address || verifiedAddresses[0]
             
             return {
               fid: user.fid,
               username: user.username,
               displayName: user.display_name || user.username,
               pfpUrl: user.pfp_url,
-              ethAddress: primaryWallet
+              ethAddress: primaryAddress || user.custody_address
             }
           }).filter((u: FarcasterUser) => u.ethAddress)
           
@@ -195,6 +216,8 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         }
       }
 
+      saveRecentRecipient(recipient, selectedUser || undefined)
+      
       setStep("success")
     } catch (error: any) {
       console.error("Error sending NFT:", error)
@@ -212,6 +235,29 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       setSelectedUser(null)
       setSearchResults([])
     }, 300)
+  }
+
+  const saveRecentRecipient = (address: string, user?: FarcasterUser) => {
+    try {
+      const stored = localStorage.getItem("recentNFTRecipients")
+      let recents: FarcasterUser[] = stored ? JSON.parse(stored) : []
+      
+      const newRecipient: FarcasterUser = user || {
+        fid: 0,
+        username: "",
+        displayName: address,
+        ethAddress: address
+      }
+      
+      recents = recents.filter(r => r.ethAddress !== address)
+      recents.unshift(newRecipient)
+      recents = recents.slice(0, 5)
+      
+      localStorage.setItem("recentNFTRecipients", JSON.stringify(recents))
+      setRecentRecipients(recents)
+    } catch (error) {
+      console.error("Error saving recent recipient:", error)
+    }
   }
 
   return (
@@ -287,7 +333,37 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
               <div>
                 <h3 className="text-sm font-medium mb-2">Recents</h3>
-                <p className="text-sm text-muted-foreground">No recent recipients</p>
+                {recentRecipients.length > 0 ? (
+                  <div className="space-y-2">
+                    {recentRecipients.map((user, index) => (
+                      <button
+                        key={user.ethAddress || index}
+                        onClick={() => handleSelectRecipient(user.ethAddress || "", user)}
+                        className="w-full text-left p-3 rounded-lg border border-border hover:bg-muted transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          {user.pfpUrl && (
+                            <img src={user.pfpUrl || "/placeholder.svg"} alt="" className="w-6 h-6 rounded-full" />
+                          )}
+                          <div className="flex-1">
+                            {user.username ? (
+                              <>
+                                <p className="text-sm font-medium">{user.displayName}</p>
+                                <p className="text-xs text-muted-foreground">@{user.username}</p>
+                              </>
+                            ) : (
+                              <p className="text-sm font-mono">
+                                {user.ethAddress?.slice(0, 6)}...{user.ethAddress?.slice(-4)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No recent recipients</p>
+                )}
               </div>
 
               {recipient && (
