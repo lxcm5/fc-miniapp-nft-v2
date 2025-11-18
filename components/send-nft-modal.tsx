@@ -64,7 +64,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         
         try {
           const response = await fetch(
-            `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${recipient}&address_types=custody_address,verified_address`,
+            `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${recipient}&address_types=custody_address`,
             {
               headers: {
                 'accept': 'application/json',
@@ -77,16 +77,12 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
           if (data && Object.keys(data).length > 0) {
             const users = Object.values(data).flat().map((user: any) => {
-              const verifiedAddresses = user.verified_addresses?.eth_addresses || []
-              const primaryAddr = verifiedAddresses.find((addr: any) => addr.primary === true)
-              const ethAddress = primaryAddr ? primaryAddr.address : user.custody_address
-              
               return {
                 fid: user.fid,
                 username: user.username,
                 displayName: user.display_name || user.username,
                 pfpUrl: user.pfp_url,
-                ethAddress: ethAddress
+                ethAddress: user.custody_address
               }
             })
             
@@ -120,16 +116,12 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
         if (data.result?.users && data.result.users.length > 0) {
           const users = data.result.users.map((user: any) => {
-            const verifiedAddresses = user.verified_addresses?.eth_addresses || []
-            const primaryAddr = verifiedAddresses.find((addr: any) => addr.primary === true)
-            const ethAddress = primaryAddr ? primaryAddr.address : user.custody_address
-            
             return {
               fid: user.fid,
               username: user.username,
               displayName: user.display_name || user.username,
               pfpUrl: user.pfp_url,
-              ethAddress: ethAddress
+              ethAddress: user.custody_address
             }
           }).filter((u: FarcasterUser) => u.ethAddress)
           
@@ -253,7 +245,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       
       recents = recents.filter(r => r.ethAddress !== address)
       recents.unshift(newRecipient)
-      recents = recents.slice(0, 5)
+      recents = recents.slice(0, 4)
       
       localStorage.setItem("recentNFTRecipients", JSON.stringify(recents))
       setRecentRecipients(recents)

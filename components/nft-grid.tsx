@@ -224,8 +224,8 @@ export function NFTGrid({
                   <Check className="w-4 h-4 text-primary-foreground" />
                 </div>
               )}
-              <div className="flex items-center gap-3 p-3">
-                <div className="w-20 h-20 relative bg-muted rounded flex-shrink-0">
+              <div className="flex items-center gap-2 p-2">
+                <div className="w-14 h-14 relative bg-muted rounded flex-shrink-0">
                   <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover rounded" />
                 </div>
                 <div className="flex-1 min-w-0">
