@@ -295,9 +295,12 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
                             <p className="text-xs text-muted-foreground">@{user.username}</p>
                           </div>
                           {user.ethAddress && (
-                            <p className="text-xs text-muted-foreground font-mono">
-                              {user.ethAddress.slice(0, 6)}...{user.ethAddress.slice(-4)}
-                            </p>
+                            <div className="text-right">
+                              <p className="text-xs text-muted-foreground">Farcaster Wallet</p>
+                              <p className="text-xs text-muted-foreground font-mono">
+                                {user.ethAddress.slice(0, 6)}...{user.ethAddress.slice(-4)}
+                              </p>
+                            </div>
                           )}
                         </div>
                       </button>
