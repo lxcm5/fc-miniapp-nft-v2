@@ -64,7 +64,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         
         try {
           const response = await fetch(
-            `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${recipient}&address_types=custody_address`,
+            `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${recipient}`,
             {
               headers: {
                 'accept': 'application/json',
@@ -77,12 +77,15 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
           if (data && Object.keys(data).length > 0) {
             const users = Object.values(data).flat().map((user: any) => {
+              console.log("[v0] User data for address search:", user)
+              const ethAddress = getPreferredBaseAddress(user)
+              
               return {
                 fid: user.fid,
                 username: user.username,
                 displayName: user.display_name || user.username,
                 pfpUrl: user.pfp_url,
-                ethAddress: user.custody_address
+                ethAddress: ethAddress
               }
             })
             
@@ -116,24 +119,10 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
         if (data.result?.users && data.result.users.length > 0) {
           const users = data.result.users.map((user: any) => {
-            let ethAddress = null
-            
-            if (user.verified_addresses?.eth_addresses && user.verified_addresses.eth_addresses.length > 0) {
-              // Try to find primary address
-              const primaryAddress = user.verified_addresses.eth_addresses.find((addr: any) => addr.primary === true)
-              if (primaryAddress) {
-                ethAddress = typeof primaryAddress === 'string' ? primaryAddress : primaryAddress.address
-              } else {
-                // Use first verified address
-                const firstAddress = user.verified_addresses.eth_addresses[0]
-                ethAddress = typeof firstAddress === 'string' ? firstAddress : firstAddress.address
-              }
-            }
-            
-            // Fallback to custody address if no verified addresses
-            if (!ethAddress) {
-              ethAddress = user.custody_address
-            }
+            console.log("[v0] User search result:", user)
+            console.log("[v0] Verified addresses:", user.verified_addresses)
+            const ethAddress = getPreferredBaseAddress(user)
+            console.log("[v0] Selected address:", ethAddress)
             
             return {
               fid: user.fid,
@@ -473,4 +462,63 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       </DialogContent>
     </Dialog>
   )
+}
+
+function getPreferredBaseAddress(user: any): string | undefined {
+  const eth = user?.verified_addresses?.eth_addresses || []
+  
+  console.log("[v0] getPreferredBaseAddress - all eth_addresses:", eth)
+  
+  // 1. Primary on Base (Farcaster Wallet most likely here)
+  const primaryBase = eth.find(
+    (a: any) => {
+      const address = typeof a === 'string' ? a : a.address
+      const chainId = typeof a === 'string' ? null : (a.chain_id || a.chainId)
+      const isPrimary = typeof a === 'string' ? false : (a.primary || a.is_primary)
+      
+      console.log("[v0] Checking address:", { address, chainId, isPrimary })
+      return chainId === "eip155:8453" && isPrimary
+    }
+  )
+  
+  if (primaryBase) {
+    const address = typeof primaryBase === 'string' ? primaryBase : primaryBase.address
+    console.log("[v0] Found primary Base address:", address)
+    return address
+  }
+  
+  // 2. Any address on Base
+  const anyBase = eth.find((a: any) => {
+    const chainId = typeof a === 'string' ? null : (a.chain_id || a.chainId)
+    return chainId === "eip155:8453"
+  })
+  
+  if (anyBase) {
+    const address = typeof anyBase === 'string' ? anyBase : anyBase.address
+    console.log("[v0] Found any Base address:", address)
+    return address
+  }
+  
+  // 3. Generic primary (any chain)
+  const genericPrimary = eth.find((a: any) => {
+    if (typeof a === 'string') return false
+    return a.primary || a.is_primary
+  })
+  
+  if (genericPrimary) {
+    const address = typeof genericPrimary === 'string' ? genericPrimary : genericPrimary.address
+    console.log("[v0] Found generic primary address:", address)
+    return address
+  }
+  
+  // 4. First verified address
+  if (eth[0]) {
+    const address = typeof eth[0] === 'string' ? eth[0] : eth[0].address
+    console.log("[v0] Using first verified address:", address)
+    return address
+  }
+  
+  // 5. Fallback to custody address
+  console.log("[v0] Falling back to custody address:", user?.custody_address)
+  return user?.custody_address
 }
