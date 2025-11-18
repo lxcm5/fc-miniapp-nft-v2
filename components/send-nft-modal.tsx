@@ -296,7 +296,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
                           </div>
                           {user.ethAddress && (
                             <div className="text-right">
-                              <p className="text-xs text-muted-foreground">Farcaster Wallet</p>
+                              <p className="text-xs text-muted-foreground">Verified address</p>
                               <p className="text-xs text-muted-foreground font-mono">
                                 {user.ethAddress.slice(0, 6)}...{user.ethAddress.slice(-4)}
                               </p>

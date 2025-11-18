@@ -199,13 +199,13 @@ export function NFTGrid({
 
   if (gridMode === "list") {
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         {nfts.map((nft) => {
           const isSelected = selectedNFTs.includes(nft.id)
           return (
             <Card
               key={nft.id}
-              className={`overflow-hidden border-border hover:shadow-lg transition-shadow cursor-pointer bg-card relative ${isSelected ? "ring-2 ring-primary" : ""}`}
+              className={`flex items-center gap-3 px-4 py-4 border-border hover:shadow-lg transition-shadow cursor-pointer bg-card relative ${isSelected ? "ring-2 ring-primary" : ""}`}
               onClick={() => handleNFTClick(nft)}
               onContextMenu={(e) => {
                 e.preventDefault()
@@ -224,15 +224,26 @@ export function NFTGrid({
                   <Check className="w-4 h-4 text-primary-foreground" />
                 </div>
               )}
-              <div className="flex items-center gap-2 p-2">
-                <div className="w-14 h-14 relative bg-muted rounded flex-shrink-0">
-                  <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover rounded" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm text-foreground truncate">{nft.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{nft.collection}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Floor: {nft.floorPrice} ETH</p>
-                </div>
+
+              <div className="w-16 h-16 relative bg-muted rounded-lg flex-shrink-0">
+                <Image
+                  src={nft.image || "/placeholder.svg"}
+                  alt={nft.name}
+                  fill
+                  className="object-cover rounded-lg"
+                />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm text-foreground truncate">
+                  {nft.name}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                  {nft.collection}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Floor: {nft.floorPrice} ETH
+                </p>
               </div>
             </Card>
           )
@@ -250,7 +261,7 @@ export function NFTGrid({
         return (
           <Card
             key={nft.id}
-            className={`overflow-hidden border-border hover:shadow-lg transition-shadow cursor-pointer bg-card relative ${isSelected ? "ring-2 ring-primary" : ""} ${!showDescriptions ? "p-0" : ""}`}
+            className={`overflow-hidden border-border hover:shadow-lg transition-shadow cursor-pointer bg-card relative ${isSelected ? "ring-2 ring-primary" : ""}`}
             onClick={() => handleNFTClick(nft)}
             onContextMenu={(e) => {
               e.preventDefault()
@@ -269,14 +280,27 @@ export function NFTGrid({
                 <Check className="w-4 h-4 text-primary-foreground" />
               </div>
             )}
-            <div className="aspect-square relative bg-muted">
-              <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover" />
+            
+            <div className="relative w-full h-40 bg-muted">
+              <Image
+                src={nft.image || "/placeholder.svg"}
+                alt={nft.name}
+                fill
+                className="object-cover"
+              />
             </div>
+            
             {showDescriptions && (
-              <div className="p-1 space-y-0">
-                <h3 className="font-semibold text-[10px] text-foreground truncate leading-tight">{nft.name}</h3>
-                <p className="text-[8px] text-muted-foreground truncate leading-tight">{nft.collection}</p>
-                <p className="text-[8px] text-muted-foreground leading-tight">Floor: {nft.floorPrice} ETH</p>
+              <div className="px-3 py-2 space-y-0.5">
+                <h3 className="font-semibold text-xs text-foreground truncate leading-tight">
+                  {nft.name}
+                </h3>
+                <p className="text-[11px] text-muted-foreground truncate leading-tight">
+                  {nft.collection}
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-tight">
+                  Floor: {nft.floorPrice} ETH
+                </p>
               </div>
             )}
           </Card>
