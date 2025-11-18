@@ -60,13 +60,28 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
 
         try {
           const frameContext = await farcasterSdk.context
-          console.log("[v0] Frame context loaded:", frameContext)
+          console.log("[v0] Frame context loaded successfully")
+          console.log("[v0] frameContext exists?", !!frameContext)
+          console.log("[v0] frameContext.user exists?", !!frameContext?.user)
+          
+          if (frameContext?.user) {
+            console.log("[v0] === USER DATA START ===")
+            console.log("[v0] custody_address:", frameContext.user.custody_address)
+            console.log("[v0] verified_addresses object:", frameContext.user.verified_addresses)
+            
+            if (frameContext.user.verified_addresses) {
+              console.log("[v0] eth_addresses array:", frameContext.user.verified_addresses.eth_addresses)
+              console.log("[v0] Number of eth addresses:", frameContext.user.verified_addresses.eth_addresses?.length || 0)
+              
+              // Log each address individually
+              frameContext.user.verified_addresses.eth_addresses?.forEach((addr, index) => {
+                console.log(`[v0] eth_address[${index}]:`, addr)
+              })
+            }
+            console.log("[v0] === USER DATA END ===")
+          }
+          
           setContext(frameContext)
-
-          console.log("[v0] User object:", frameContext?.user)
-          console.log("[v0] Custody address:", frameContext?.user?.custody_address)
-          console.log("[v0] Verified addresses:", frameContext?.user?.verified_addresses)
-          console.log("[v0] Verified addresses FULL STRUCTURE:", JSON.stringify(frameContext?.user?.verified_addresses, null, 2))
 
           const address =
             frameContext?.user?.custody_address || frameContext?.user?.verified_addresses?.eth_addresses?.[0]
