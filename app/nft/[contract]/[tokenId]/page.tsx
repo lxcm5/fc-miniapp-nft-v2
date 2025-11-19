@@ -26,22 +26,28 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
     
     console.log("[v0] Setting avatar for NFT:", nft.contractAddress, nft.tokenId)
     
-    // Approach 1: Open the NFT in Warpcast native viewer
+    // Format: eip155:8453/erc721:0x.../tokenId
     const tokenCAIP = `eip155:8453/erc721:${nft.contractAddress.toLowerCase()}/${nft.tokenId}`
     console.log("[v0] Token CAIP-19:", tokenCAIP)
     
     try {
-      // Try viewToken first
-      if (sdk.actions.viewToken) {
+      // Check if viewToken is available in the SDK
+      if (sdk.actions && sdk.actions.viewToken) {
         console.log("[v0] Calling sdk.actions.viewToken")
         await sdk.actions.viewToken({ token: tokenCAIP })
       } else {
-        // Fallback: open URL to the NFT on OpenSea which Warpcast might handle natively
-        console.log("[v0] viewToken not available, using openUrl")
+        console.log("[v0] sdk.actions.viewToken not available, falling back to openUrl")
+        // Fallback to OpenSea if viewToken is not supported
         await sdk.actions.openUrl(`https://opensea.io/assets/base/${nft.contractAddress}/${nft.tokenId}`)
       }
     } catch (error) {
       console.error("[v0] Error setting avatar:", error)
+      // Fallback on error
+      try {
+        await sdk.actions.openUrl(`https://opensea.io/assets/base/${nft.contractAddress}/${nft.tokenId}`)
+      } catch (e) {
+        console.error("[v0] Error opening URL:", e)
+      }
     }
   }
 
