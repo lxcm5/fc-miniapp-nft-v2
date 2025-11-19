@@ -4,14 +4,16 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { SendNFTModal } from "@/components/send-nft-modal"
 import { useState } from "react"
+import { useFarcaster } from "@/app/providers"
 
 export default function NFTDetailPage({ params }: { params: { contract: string; tokenId: string } }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [showSendModal, setShowSendModal] = useState(false)
+  const { sdk } = useFarcaster()
 
   const nftDataString = searchParams.get("data")
   const nft = nftDataString ? JSON.parse(decodeURIComponent(nftDataString)) : null
@@ -61,16 +63,25 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
 
         <Card className="p-4 mb-4 bg-card border-border">
           <div className="space-y-3">
-            <div className="flex justify-between items-start">
+            <div 
+              className="flex justify-between items-center cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded transition-colors"
+              onClick={() => sdk?.actions.openUrl(`https://opensea.io/assets?search[query]=${nft.contractAddress}`)}
+            >
               <span className="text-sm text-muted-foreground">Collection</span>
-              <a
-                href={`https://opensea.io/assets?search[query]=${nft.contractAddress}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium text-primary hover:underline text-right truncate ml-4"
-              >
-                {nft.collection}
-              </a>
+              <div className="flex items-center gap-2 ml-4 overflow-hidden">
+                <span className="text-sm font-medium text-primary hover:underline truncate">
+                  {nft.collection}
+                </span>
+                <a
+                  href={`https://opensea.io/assets?search[query]=${nft.contractAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
             </div>
             <div className="flex justify-between items-start border-t border-border pt-3">
               <span className="text-sm text-muted-foreground">Token ID</span>
@@ -79,6 +90,10 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
             <div className="flex justify-between items-start border-t border-border pt-3">
               <span className="text-sm text-muted-foreground">Floor price</span>
               <span className="text-sm font-medium text-foreground">{nft.floorPrice || "—"} ETH</span>
+            </div>
+            <div className="flex justify-between items-start border-t border-border pt-3">
+              <span className="text-sm text-muted-foreground">Best Offer</span>
+              <span className="text-sm font-medium text-foreground">—</span>
             </div>
             <div className="flex justify-between items-start border-t border-border pt-3">
               <span className="text-sm text-muted-foreground">Chain</span>
