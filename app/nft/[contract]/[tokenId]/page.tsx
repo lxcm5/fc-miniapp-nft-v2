@@ -31,23 +31,16 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
     console.log("[v0] Token CAIP-19:", tokenCAIP)
     
     try {
-      // Check if viewToken is available in the SDK
       if (sdk.actions && sdk.actions.viewToken) {
         console.log("[v0] Calling sdk.actions.viewToken")
         await sdk.actions.viewToken({ token: tokenCAIP })
       } else {
-        console.log("[v0] sdk.actions.viewToken not available, falling back to openUrl")
-        // Fallback to OpenSea if viewToken is not supported
-        await sdk.actions.openUrl(`https://opensea.io/assets/base/${nft.contractAddress}/${nft.tokenId}`)
+        console.error("[v0] sdk.actions.viewToken not available")
+        alert("Set as avatar is only available in Warpcast")
       }
     } catch (error) {
       console.error("[v0] Error setting avatar:", error)
-      // Fallback on error
-      try {
-        await sdk.actions.openUrl(`https://opensea.io/assets/base/${nft.contractAddress}/${nft.tokenId}`)
-      } catch (e) {
-        console.error("[v0] Error opening URL:", e)
-      }
+      alert("Failed to open NFT viewer")
     }
   }
 
