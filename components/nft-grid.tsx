@@ -225,9 +225,16 @@ export function NFTGrid({
                   <Check className="w-4 h-4 text-primary-foreground" />
                 </div>
               )}
-              <div className="flex items-center justify-center p-0">
-                <div className="w-16 h-16 relative bg-muted rounded flex-shrink-0">
-                  <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover rounded" />
+              <div className="flex items-center h-16">
+                <div className="w-16 h-16 relative bg-muted flex-shrink-0">
+                  <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover" />
+                </div>
+                <div className="flex flex-col justify-center px-3 min-w-0 flex-1 gap-0.5">
+                  <p className="text-[10px] text-muted-foreground truncate leading-tight">{nft.collection}</p>
+                  <p className="text-sm font-medium truncate leading-tight">{nft.name}</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight">
+                    Floor: {nft.floorPrice} {nft.floorPrice !== "—" && "ETH"}
+                  </p>
                 </div>
               </div>
             </Card>
