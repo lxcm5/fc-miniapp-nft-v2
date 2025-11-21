@@ -244,7 +244,7 @@ export function NFTGrid({
         return (
           <Card
             key={nft.id}
-            className={`overflow-hidden border-border hover:shadow-lg transition-shadow cursor-pointer bg-card relative ${isSelected ? "ring-2 ring-primary" : ""}`}
+            className={`overflow-hidden border-border hover:shadow-lg transition-shadow cursor-pointer bg-card relative ${isSelected ? "ring-2 ring-primary" : ""} p-0`}
             onClick={() => handleNFTClick(nft)}
             onContextMenu={(e) => {
               e.preventDefault()
@@ -263,7 +263,7 @@ export function NFTGrid({
                 <Check className="w-4 h-4 text-primary-foreground" />
               </div>
             )}
-            <div className="aspect-square relative bg-muted">
+            <div className={`relative bg-muted ${gridMode === 2 ? "h-40 w-full" : "aspect-square w-full"}`}>
               <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover" />
               {gridMode === 2 && (
                 <div className="absolute bottom-1 left-1 bg-black/10 rounded px-1.5 py-0.5 max-w-[90%] backdrop-blur-[2px]">
