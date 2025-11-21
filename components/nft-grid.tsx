@@ -225,7 +225,7 @@ export function NFTGrid({
                   <Check className="w-4 h-4 text-primary-foreground" />
                 </div>
               )}
-              <div className="flex items-center justify-center p-2">
+              <div className="flex items-center justify-center p-0">
                 <div className="w-16 h-16 relative bg-muted rounded flex-shrink-0">
                   <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover rounded" />
                 </div>
@@ -266,18 +266,18 @@ export function NFTGrid({
             <div className="aspect-square relative bg-muted">
               <Image src={nft.image || "/placeholder.svg"} alt={nft.name} fill className="object-cover" />
               {gridMode === 2 && (
-                <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1.5 py-0.5 max-w-[90%] backdrop-blur-[2px]">
+                <div className="absolute bottom-1 left-1 bg-black/20 rounded px-1.5 py-0.5 max-w-[90%] backdrop-blur-[2px]">
                   <p className="text-[10px] text-white truncate font-medium leading-tight">{nft.collection}</p>
                   <p className="text-[10px] text-white truncate font-medium leading-tight">{nft.name}</p>
                 </div>
               )}
               {gridMode === 3 && (
-                <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1.5 py-0.5 max-w-[90%] backdrop-blur-[2px]">
+                <div className="absolute bottom-1 left-1 bg-black/20 rounded px-1.5 py-0.5 max-w-[90%] backdrop-blur-[2px]">
                   <p className="text-[8px] text-white truncate font-medium leading-tight">{nft.collection}</p>
                 </div>
               )}
               {gridMode === 4 && (
-                <div className="absolute bottom-1 left-1 bg-black/30 rounded px-1.5 py-0.5 max-w-[90%] backdrop-blur-[2px]">
+                <div className="absolute bottom-1 left-1 bg-black/20 rounded px-1.5 py-0.5 max-w-[90%] backdrop-blur-[2px]">
                   <p className="text-[8px] text-white truncate font-medium leading-tight">{nft.collection}</p>
                 </div>
               )}
