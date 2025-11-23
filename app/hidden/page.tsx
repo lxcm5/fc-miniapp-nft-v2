@@ -63,7 +63,10 @@ export default function HiddenPage() {
           </button>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-[1.35rem] font-bold text-foreground">Hidden NFTs</h1>
+              <div className="flex items-baseline gap-2">
+                <h1 className="text-[1.35rem] font-bold text-foreground">Hidden NFTs</h1>
+                <span className="text-[0.675rem] text-muted-foreground">(most probably spam, scam)</span>
+              </div>
               <p className="text-sm text-muted-foreground mt-1">{hiddenCount} hidden NFTs</p>
             </div>
           </div>
@@ -75,7 +78,7 @@ export default function HiddenPage() {
           <>
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-semibold text-foreground">Hidden Collection</h2>
+                <div></div>
                 <Button
                   variant="outline"
                   size="sm"
