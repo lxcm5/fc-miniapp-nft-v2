@@ -30,6 +30,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
   const [isSearching, setIsSearching] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [recentRecipients, setRecentRecipients] = useState<FarcasterUser[]>([])
+  const [isAddressConfirmed, setIsAddressConfirmed] = useState(false)
   const { walletAddress } = useFarcaster()
 
   const myVerifiedAddresses = [walletAddress].filter(Boolean)
@@ -240,6 +241,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       setRecipient("")
       setSelectedUser(null)
       setSearchResults([])
+      setIsAddressConfirmed(false)
     }, 300)
   }
 
@@ -435,11 +437,24 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
                 </div>
               </div>
 
+              <div className="flex items-center gap-2 px-1">
+                <input
+                  type="checkbox"
+                  id="confirm-address"
+                  checked={isAddressConfirmed}
+                  onChange={(e) => setIsAddressConfirmed(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                />
+                <label htmlFor="confirm-address" className="text-sm cursor-pointer">
+                  recipient address is correct
+                </label>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <Button variant="outline" onClick={() => setStep("recipient")} disabled={isSending}>
                   Back
                 </Button>
-                <Button onClick={handleSend} className="bg-primary" disabled={isSending}>
+                <Button onClick={handleSend} className="bg-primary" disabled={isSending || !isAddressConfirmed}>
                   {isSending ? "Sending..." : "Send"}
                 </Button>
               </div>
