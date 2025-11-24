@@ -46,7 +46,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         console.error("Error loading recent recipients:", error)
       }
     }
-    
+
     if (isOpen) {
       loadRecents()
     }
@@ -61,34 +61,36 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
       if (recipient.startsWith("0x") && recipient.length > 10) {
         setIsSearching(true)
-        
+
         try {
           const response = await fetch(
             `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${recipient}`,
             {
               headers: {
-                'accept': 'application/json',
-                'api_key': 'NEYNAR_API_DOCS'
-              }
-            }
+                accept: "application/json",
+                api_key: "NEYNAR_API_DOCS",
+              },
+            },
           )
-          
+
           const data = await response.json()
 
           if (data && Object.keys(data).length > 0) {
-            const users = Object.values(data).flat().map((user: any) => {
-              console.log("[v0] User data for address search:", user)
-              const ethAddress = getPreferredBaseAddress(user)
-              
-              return {
-                fid: user.fid,
-                username: user.username,
-                displayName: user.display_name || user.username,
-                pfpUrl: user.pfp_url,
-                ethAddress: ethAddress
-              }
-            })
-            
+            const users = Object.values(data)
+              .flat()
+              .map((user: any) => {
+                console.log("[v0] User data for address search:", user)
+                const ethAddress = getPreferredBaseAddress(user)
+
+                return {
+                  fid: user.fid,
+                  username: user.username,
+                  displayName: user.display_name || user.username,
+                  pfpUrl: user.pfp_url,
+                  ethAddress: ethAddress,
+                }
+              })
+
             setSearchResults(users)
           } else {
             setSearchResults([])
@@ -103,36 +105,38 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       }
 
       setIsSearching(true)
-      
+
       try {
         const response = await fetch(
           `https://api.neynar.com/v2/farcaster/user/search?q=${encodeURIComponent(recipient)}&limit=5`,
           {
             headers: {
-              'accept': 'application/json',
-              'api_key': 'NEYNAR_API_DOCS'
-            }
-          }
+              accept: "application/json",
+              api_key: "NEYNAR_API_DOCS",
+            },
+          },
         )
-        
+
         const data = await response.json()
 
         if (data.result?.users && data.result.users.length > 0) {
-          const users = data.result.users.map((user: any) => {
-            console.log("[v0] User search result:", user)
-            console.log("[v0] Verified addresses:", user.verified_addresses)
-            const ethAddress = getPreferredBaseAddress(user)
-            console.log("[v0] Selected address:", ethAddress)
-            
-            return {
-              fid: user.fid,
-              username: user.username,
-              displayName: user.display_name || user.username,
-              pfpUrl: user.pfp_url,
-              ethAddress: ethAddress
-            }
-          }).filter((u: FarcasterUser) => u.ethAddress)
-          
+          const users = data.result.users
+            .map((user: any) => {
+              console.log("[v0] User search result:", user)
+              console.log("[v0] Verified addresses:", user.verified_addresses)
+              const ethAddress = getPreferredBaseAddress(user)
+              console.log("[v0] Selected address:", ethAddress)
+
+              return {
+                fid: user.fid,
+                username: user.username,
+                displayName: user.display_name || user.username,
+                pfpUrl: user.pfp_url,
+                ethAddress: ethAddress,
+              }
+            })
+            .filter((u: FarcasterUser) => u.ethAddress)
+
           setSearchResults(users)
         } else {
           setSearchResults([])
@@ -165,13 +169,13 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
     try {
       const provider = farcasterSdk.wallet.ethProvider
-      
+
       if (!provider) {
         throw new Error("Ethereum provider not available. Please open this app in Warpcast.")
       }
-      
+
       const normalizedRecipient = recipient.toLowerCase()
-      
+
       if (!normalizedRecipient.startsWith("0x")) {
         throw new Error("Invalid recipient address")
       }
@@ -183,7 +187,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       for (const nft of nftData || []) {
         const contractAddress = nft.contractAddress || nft.contract?.address || nft.contract_address
         const rawTokenId = nft.tokenId || nft.token_id || nft.id?.tokenId
-        
+
         if (!contractAddress || !rawTokenId) {
           throw new Error("Missing contract address or token ID")
         }
@@ -196,21 +200,21 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         }
 
         const functionSelector = "0x42842e0e"
-        const fromPadded = walletAddress.slice(2).padStart(64, '0')
-        const toPadded = normalizedRecipient.slice(2).padStart(64, '0')
-        const tokenIdPadded = tokenIdHex.slice(2).padStart(64, '0')
+        const fromPadded = walletAddress.slice(2).padStart(64, "0")
+        const toPadded = normalizedRecipient.slice(2).padStart(64, "0")
+        const tokenIdPadded = tokenIdHex.slice(2).padStart(64, "0")
         const encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded
 
         const txParams = {
           from: walletAddress,
           to: contractAddress,
           data: encodedData,
-          value: '0x0'
+          value: "0x0",
         }
 
         const txHash = await provider.request({
-          method: 'eth_sendTransaction',
-          params: [txParams]
+          method: "eth_sendTransaction",
+          params: [txParams],
         })
 
         if (!txHash) {
@@ -219,7 +223,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       }
 
       saveRecentRecipient(recipient, selectedUser || undefined)
-      
+
       setStep("success")
     } catch (error: any) {
       console.error("Error sending NFT:", error)
@@ -243,18 +247,18 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
     try {
       const stored = localStorage.getItem("recentNFTRecipients")
       let recents: FarcasterUser[] = stored ? JSON.parse(stored) : []
-      
+
       const newRecipient: FarcasterUser = user || {
         fid: 0,
         username: "",
         displayName: address,
-        ethAddress: address
+        ethAddress: address,
       }
-      
-      recents = recents.filter(r => r.ethAddress !== address)
+
+      recents = recents.filter((r) => r.ethAddress !== address)
       recents.unshift(newRecipient)
       recents = recents.slice(0, 4)
-      
+
       localStorage.setItem("recentNFTRecipients", JSON.stringify(recents))
       setRecentRecipients(recents)
     } catch (error) {
@@ -430,11 +434,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
                 <Button variant="outline" onClick={() => setStep("recipient")} disabled={isSending}>
                   Back
                 </Button>
-                <Button 
-                  onClick={handleSend} 
-                  className="bg-primary" 
-                  disabled={isSending}
-                >
+                <Button onClick={handleSend} className="bg-primary" disabled={isSending}>
                   {isSending ? "Sending..." : "Send"}
                 </Button>
               </div>
@@ -465,12 +465,23 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 }
 
 function getPreferredBaseAddress(user: any): string | undefined {
+  console.log("[v0] === getPreferredBaseAddress START ===")
   console.log("[v0] User custody_address:", user?.custody_address)
-  console.log("[v0] User verified_addresses:", user?.verified_addresses?.eth_addresses)
-  
-  // Use exact same logic as app/providers.tsx
-  const address = user?.custody_address || user?.verified_addresses?.eth_addresses?.[0]
-  
-  console.log("[v0] Final selected address:", address)
-  return address
+  console.log("[v0] User verified_addresses:", JSON.stringify(user?.verified_addresses, null, 2))
+
+  // custody_address is a technical Optimism address, not the wallet user wants to use
+  const ethAddresses = user?.verified_addresses?.eth_addresses
+
+  if (ethAddresses && Array.isArray(ethAddresses) && ethAddresses.length > 0) {
+    // Take the FIRST verified address which should be the Farcaster Wallet
+    const address = ethAddresses[0]
+    console.log("[v0] Using verified address[0]:", address)
+    console.log("[v0] === getPreferredBaseAddress END ===")
+    return address
+  }
+
+  // Fallback to custody address only if no verified addresses
+  console.log("[v0] No verified addresses found, using custody_address as fallback")
+  console.log("[v0] === getPreferredBaseAddress END ===")
+  return user?.custody_address
 }
