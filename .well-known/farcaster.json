@@ -28,4 +28,7 @@
     "payload": "eyJkb21haW4iOiJtaW5pYXBwLW5mdC12Mi52ZXJjZWwuYXBwIn0",
     "signature": "lu58Wq6fQpv9Dm7DycaUtfAI2Hdvf11+RCZ+uec61VxrQLGOUHC2SZzQP2Ja4u/3EgBiJqY7fZJWRVTWmUukKhw="
   }
+  "baseBuilder": {
+    "ownerAddress": "0xB541481b59D97f8789998C688E640855Fe754648"
+  }
 }
