@@ -48,22 +48,17 @@ export function NFTGrid({
 
       try {
         setLoading(true)
-        let allNFTs: any[] = []
-        let pageKey: string | undefined = undefined
 
-        do {
-          const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/pSYF7FVv63ho_VUplwQrK/getNFTsForOwner?owner=${walletAddress}&withMetadata=true&pageSize=100${pageKey ? `&pageKey=${pageKey}` : ""}`
+        const response = await fetch(`/api/nfts?address=${walletAddress}`)
+        const data = await response.json()
 
-          const response = await fetch(alchemyUrl)
-          const data = await response.json()
+        if (data.error) {
+          console.error("[v0] Error from API:", data.error)
+          setNfts([])
+          return
+        }
 
-          if (data.ownedNfts && data.ownedNfts.length > 0) {
-            allNFTs = [...allNFTs, ...data.ownedNfts]
-          }
-
-          pageKey = data.pageKey
-        } while (pageKey)
-
+        const allNFTs = data.nfts || []
         console.log(`[v0] Total NFTs loaded: ${allNFTs.length}`)
 
         if (allNFTs.length > 0) {

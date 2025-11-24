@@ -17,21 +17,15 @@ export function WalletBalance() {
       if (!walletAddress) return
 
       try {
-        let allNFTs: any[] = []
-        let pageKey: string | undefined = undefined
+        const response = await fetch(`/api/nfts?address=${walletAddress}`)
+        const data = await response.json()
 
-        do {
-          const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/pSYF7FVv63ho_VUplwQrK/getNFTsForOwner?owner=${walletAddress}&withMetadata=true&pageSize=100${pageKey ? `&pageKey=${pageKey}` : ""}`
-          const response = await fetch(alchemyUrl)
-          const data = await response.json()
+        if (data.error) {
+          console.error("[v0] Error from API:", data.error)
+          return
+        }
 
-          if (data.ownedNfts && data.ownedNfts.length > 0) {
-            allNFTs = [...allNFTs, ...data.ownedNfts]
-          }
-
-          pageKey = data.pageKey
-        } while (pageKey)
-
+        const allNFTs = data.nfts || []
         const hiddenNFTs = JSON.parse(localStorage.getItem("hidden_nfts") || "[]")
         const visibleNFTs = allNFTs.filter((nft: any) => {
           const nftId = `${nft.contract.address}-${nft.tokenId.tokenId || nft.tokenId}`
