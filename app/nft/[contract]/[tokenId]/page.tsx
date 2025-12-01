@@ -27,19 +27,16 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
       if (!nft) return
 
       try {
-        const collectionSlug = nft.collection?.toLowerCase().replace(/\s+/g, "-") || ""
-
-        const response = await fetch(
-          `/api/opensea-data?contract=${nft.contractAddress}&tokenId=${nft.tokenId}&collectionSlug=${collectionSlug}`,
-        )
+        const response = await fetch(`/api/opensea-data?contract=${nft.contractAddress}`)
 
         if (response.ok) {
           const data = await response.json()
+          console.log("[v0] Collection data received:", data)
           setCollectionFloor(data.collectionFloor)
           setTopOffer(data.topOffer)
         }
       } catch (error) {
-        console.error("[v0] Error fetching OpenSea data:", error)
+        console.error("[v0] Error fetching collection data:", error)
       }
     }
 

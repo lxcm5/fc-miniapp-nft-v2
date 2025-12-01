@@ -3,68 +3,53 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const contract = searchParams.get("contract")
-  const tokenId = searchParams.get("tokenId")
-  const collectionSlug = searchParams.get("collectionSlug")
 
-  if (!contract || !tokenId) {
-    return NextResponse.json({ error: "Missing contract or tokenId" }, { status: 400 })
-  }
-
-  const apiKey = process.env.OPENSEA_API_KEY
-
-  if (!apiKey) {
-    console.error("[v0] OpenSea API key not configured")
-    return NextResponse.json({ error: "OpenSea API key not configured" }, { status: 500 })
+  if (!contract) {
+    return NextResponse.json({ error: "Missing contract address" }, { status: 400 })
   }
 
   try {
-    let collectionFloor = null
-    let topOffer = null
+    console.log("[v0] Fetching collection data from Reservoir for:", contract)
+    const res = await fetch(`https://api.reservoir.tools/collections/v5?id=${encodeURIComponent(contract)}`, {
+      headers: {
+        Accept: "application/json",
+      },
+    })
 
-    if (collectionSlug) {
-      console.log("[v0] Fetching collection stats for:", collectionSlug)
-      const statsResponse = await fetch(`https://api.opensea.io/api/v2/collections/${collectionSlug}/stats`, {
-        headers: {
-          "X-API-KEY": apiKey,
-        },
-      })
-
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json()
-        console.log("[v0] Collection stats:", JSON.stringify(statsData, null, 2))
-        collectionFloor = statsData.total?.floor_price || null
-      } else {
-        console.error("[v0] Collection stats error:", statsResponse.status, await statsResponse.text())
-      }
+    if (!res.ok) {
+      const text = await res.text()
+      console.error("[v0] Reservoir error:", res.status, text)
+      return NextResponse.json({ error: "Reservoir API error", status: res.status }, { status: 500 })
     }
 
-    if (contract && tokenId) {
-      console.log("[v0] Fetching best offer for:", contract, tokenId)
-      const offerResponse = await fetch(
-        `https://api.opensea.io/api/v2/offers/collection/base/${contract}/nfts/${tokenId}/best`,
-        {
-          headers: {
-            "X-API-KEY": apiKey,
-          },
-        },
-      )
+    const json = await res.json()
+    const collection = json.collections?.[0]
 
-      if (offerResponse.ok) {
-        const offerData = await offerResponse.json()
-        console.log("[v0] Best offer data:", JSON.stringify(offerData, null, 2))
-        topOffer = offerData.price?.value || null
-      } else {
-        console.error("[v0] Best offer error:", offerResponse.status, await offerResponse.text())
-      }
+    if (!collection) {
+      console.log("[v0] Collection not found in Reservoir")
+      return NextResponse.json({ error: "Collection not found" }, { status: 404 })
     }
 
-    console.log("[v0] Returning OpenSea data:", { collectionFloor, topOffer })
+    const floor = collection.floorAsk?.price?.amount
+    const topBid = collection.topBid?.price?.amount
+
+    console.log("[v0] Reservoir data:", {
+      floor: floor?.native,
+      topOffer: topBid?.native,
+      name: collection.name,
+    })
+
     return NextResponse.json({
-      collectionFloor,
-      topOffer,
+      collectionFloor: floor?.native ?? null,
+      topOffer: topBid?.native ?? null,
+      name: collection.name,
+      description: collection.description,
+      image: collection.image,
+      supply: collection.tokenCount,
+      owners: collection.ownerCount,
     })
   } catch (error) {
-    console.error("[v0] Error fetching OpenSea data:", error)
-    return NextResponse.json({ error: "Failed to fetch OpenSea data" }, { status: 500 })
+    console.error("[v0] Error fetching Reservoir data:", error)
+    return NextResponse.json({ error: "Failed to fetch collection data" }, { status: 500 })
   }
 }
