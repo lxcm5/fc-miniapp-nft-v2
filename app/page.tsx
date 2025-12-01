@@ -58,7 +58,7 @@ export default function Page() {
 
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-semibold text-foreground">My NFT Collection</h2>
+                <h2 className="text-xl font-semibold text-foreground">My Collection</h2>
                 <Button
                   variant="outline"
                   size="sm"

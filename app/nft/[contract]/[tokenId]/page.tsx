@@ -20,24 +20,29 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
   const nftDataString = searchParams.get("data")
   const nft = nftDataString ? JSON.parse(decodeURIComponent(nftDataString)) : null
 
-  const collectionFloor = nft?.contract?.openSeaMetadata?.floorPrice
-    ? Number.parseFloat(nft.contract.openSeaMetadata.floorPrice).toFixed(4)
-    : nft?.collectionFloorPrice
-      ? Number.parseFloat(nft.collectionFloorPrice).toFixed(4)
-      : null
+  useEffect(() => {
+    if (nft) {
+      console.log("[v0] NFT full object:", nft)
+      console.log("[v0] contract.openSeaMetadata:", nft?.contract?.openSeaMetadata)
+      console.log("[v0] contract.openSeaMetadata.floorPrice:", nft?.contract?.openSeaMetadata?.floorPrice)
+      console.log("[v0] collectionFloorPrice:", nft?.collectionFloorPrice)
+      console.log("[v0] Collection details:", {
+        name: nft.collection,
+        description: nft?.contract?.openSeaMetadata?.description,
+        totalSupply: nft?.contract?.totalSupply,
+      })
+    }
+  }, [nft])
+
+  const collectionFloor =
+    nft?.contract?.openSeaMetadata?.floorPrice ||
+    nft?.collectionFloorPrice ||
+    nft?.contract?.openSea?.floorPrice ||
+    null
+  const formattedFloor = collectionFloor ? Number.parseFloat(collectionFloor).toFixed(4) : null
 
   const collectionDescription = nft?.contract?.openSeaMetadata?.description || nft?.description || null
   const collectionSupply = nft?.contract?.totalSupply || nft?.totalSupply || null
-
-  useEffect(() => {
-    console.log("[v0] NFT loaded:", {
-      name: nft?.name,
-      contract: nft?.contractAddress,
-      floor: collectionFloor,
-      supply: collectionSupply,
-      traits: nft?.raw?.metadata?.attributes?.length || nft?.traits?.length || 0,
-    })
-  }, [nft])
 
   const handleHide = () => {
     if (!nft) return
@@ -94,8 +99,13 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                 <div className="flex justify-between items-start">
                   <span className="text-sm text-muted-foreground">Collection Floor</span>
                   <span className="text-sm font-medium text-foreground">
-                    {collectionFloor ? `${collectionFloor} ETH` : "—"}
+                    {formattedFloor ? `${formattedFloor} ETH` : "—"}
                   </span>
+                </div>
+
+                <div className="flex justify-between items-start border-t border-border pt-3">
+                  <span className="text-sm text-muted-foreground">Top Offer</span>
+                  <span className="text-sm font-medium text-foreground">—</span>
                 </div>
 
                 <div className="border-t border-border pt-3">
