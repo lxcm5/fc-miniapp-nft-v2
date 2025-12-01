@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   const apiKey = process.env.OPENSEA_API_KEY
 
   if (!apiKey) {
+    console.error("[v0] OpenSea API key not configured")
     return NextResponse.json({ error: "OpenSea API key not configured" }, { status: 500 })
   }
 
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
     let topOffer = null
 
     if (collectionSlug) {
+      console.log("[v0] Fetching collection stats for:", collectionSlug)
       const statsResponse = await fetch(`https://api.opensea.io/api/v2/collections/${collectionSlug}/stats`, {
         headers: {
           "X-API-KEY": apiKey,
@@ -29,13 +31,17 @@ export async function GET(request: NextRequest) {
 
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
+        console.log("[v0] Collection stats:", JSON.stringify(statsData, null, 2))
         collectionFloor = statsData.total?.floor_price || null
+      } else {
+        console.error("[v0] Collection stats error:", statsResponse.status, await statsResponse.text())
       }
     }
 
-    if (collectionSlug) {
+    if (contract && tokenId) {
+      console.log("[v0] Fetching best offer for:", contract, tokenId)
       const offerResponse = await fetch(
-        `https://api.opensea.io/api/v2/offers/collection/${collectionSlug}/nfts/${tokenId}/best`,
+        `https://api.opensea.io/api/v2/offers/collection/base/${contract}/nfts/${tokenId}/best`,
         {
           headers: {
             "X-API-KEY": apiKey,
@@ -45,10 +51,14 @@ export async function GET(request: NextRequest) {
 
       if (offerResponse.ok) {
         const offerData = await offerResponse.json()
+        console.log("[v0] Best offer data:", JSON.stringify(offerData, null, 2))
         topOffer = offerData.price?.value || null
+      } else {
+        console.error("[v0] Best offer error:", offerResponse.status, await offerResponse.text())
       }
     }
 
+    console.log("[v0] Returning OpenSea data:", { collectionFloor, topOffer })
     return NextResponse.json({
       collectionFloor,
       topOffer,
