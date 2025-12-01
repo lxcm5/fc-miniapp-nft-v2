@@ -14,6 +14,8 @@ export default function Page() {
   const [selectedNFTs, setSelectedNFTs] = useState<string[]>([])
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [isSendModalOpen, setIsSendModalOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<"date" | "name" | "collection" | "floor">("date")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const router = useRouter()
 
   const cycleGridMode = () => {
@@ -34,6 +36,17 @@ export default function Page() {
     setSelectedNFTs([])
     setIsSelectionMode(false)
     window.location.reload()
+  }
+
+  const cycleSortMode = () => {
+    if (sortBy === "date") setSortBy("name")
+    else if (sortBy === "name") setSortBy("collection")
+    else if (sortBy === "collection") setSortBy("floor")
+    else setSortBy("date")
+  }
+
+  const toggleSortDirection = () => {
+    setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
   }
 
   return (
@@ -59,38 +72,67 @@ export default function Page() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-semibold text-foreground">My Collection</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={cycleGridMode}
-                  className="flex items-center gap-2 bg-transparent"
-                >
-                  {gridMode === "list" ? (
-                    <>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={cycleSortMode}
+                    className="flex items-center gap-2 bg-transparent capitalize"
+                  >
+                    {sortBy === "date" && "Date"}
+                    {sortBy === "name" && "Name"}
+                    {sortBy === "collection" && "Collection"}
+                    {sortBy === "floor" && "Floor"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleSortDirection}
+                    className="flex items-center gap-1 bg-transparent px-2"
+                  >
+                    {sortDirection === "asc" ? (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 6h16M4 12h16M4 18h16"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                       </svg>
-                      List
-                    </>
-                  ) : (
-                    <>
+                    ) : (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
-                      {gridMode}×
-                    </>
-                  )}
-                </Button>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={cycleGridMode}
+                    className="flex items-center gap-2 bg-transparent"
+                  >
+                    {gridMode === "list" ? (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 6h16M4 12h16M4 18h16"
+                          />
+                        </svg>
+                        List
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                          />
+                        </svg>
+                        {gridMode}×
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
               <NFTGrid
                 gridMode={gridMode}
@@ -99,6 +141,8 @@ export default function Page() {
                 isSelectionMode={isSelectionMode}
                 setIsSelectionMode={setIsSelectionMode}
                 isHiddenPage={false}
+                sortBy={sortBy}
+                sortDirection={sortDirection}
               />
             </div>
           </>

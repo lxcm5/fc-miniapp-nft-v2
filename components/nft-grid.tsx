@@ -28,6 +28,8 @@ interface NFTGridProps {
   isSelectionMode: boolean
   setIsSelectionMode: (mode: boolean) => void
   isHiddenPage: boolean
+  sortBy?: "date" | "name" | "collection" | "floor"
+  sortDirection?: "asc" | "desc"
 }
 
 export function NFTGrid({
@@ -37,6 +39,8 @@ export function NFTGrid({
   isSelectionMode,
   setIsSelectionMode,
   isHiddenPage,
+  sortBy = "date",
+  sortDirection = "desc",
 }: NFTGridProps) {
   const { walletAddress, isWalletConnected } = useFarcaster()
   const [nfts, setNfts] = useState<NFT[]>([])
@@ -139,6 +143,35 @@ export function NFTGrid({
     fetchNFTs()
   }, [walletAddress, isWalletConnected, isHiddenPage])
 
+  const sortedNfts = [...nfts].sort((a, b) => {
+    let comparison = 0
+
+    switch (sortBy) {
+      case "date":
+        // Keep original order (date added to wallet)
+        comparison = 0
+        break
+      case "name":
+        comparison = a.name.localeCompare(b.name)
+        break
+      case "collection":
+        comparison = a.collection.localeCompare(b.collection)
+        break
+      case "floor":
+        const floorA = a.floorPrice === "—" ? -1 : Number.parseFloat(a.floorPrice || "0")
+        const floorB = b.floorPrice === "—" ? -1 : Number.parseFloat(b.floorPrice || "0")
+
+        // Put NFTs without floor at the bottom
+        if (floorA === -1 && floorB === -1) comparison = 0
+        else if (floorA === -1) comparison = 1
+        else if (floorB === -1) comparison = -1
+        else comparison = floorA - floorB
+        break
+    }
+
+    return sortDirection === "asc" ? comparison : -comparison
+  })
+
   const gridCols =
     gridMode === "list"
       ? "grid-cols-1"
@@ -209,7 +242,7 @@ export function NFTGrid({
   if (gridMode === "list") {
     return (
       <div className="space-y-2">
-        {nfts.map((nft) => {
+        {sortedNfts.map((nft) => {
           const isSelected = selectedNFTs.includes(nft.id)
           return (
             <Card
@@ -254,7 +287,7 @@ export function NFTGrid({
 
   return (
     <div className={`grid ${gridCols} gap-3`}>
-      {nfts.map((nft) => {
+      {sortedNfts.map((nft) => {
         const isSelected = selectedNFTs.includes(nft.id)
         return (
           <Card

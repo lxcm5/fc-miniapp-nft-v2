@@ -42,13 +42,17 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
       const fetchPriceHistory = async () => {
         setLoadingHistory(true)
         try {
+          const endTime = Math.floor(Date.now() / 1000)
+          const startTime = endTime - 365 * 24 * 60 * 60 // 1 year ago
+
           const response = await fetch(
-            `https://api.reservoir.tools/collections/floor-ask/v1?collection=${nft.contractAddress}&startTimestamp=${Math.floor(Date.now() / 1000) - 365 * 24 * 60 * 60}`,
+            `https://api.reservoir.tools/events/collections/floor-ask/v2?collection=${nft.contractAddress}&startTimestamp=${startTime}&endTimestamp=${endTime}`,
           )
           const data = await response.json()
-          console.log("[v0] Price history data:", data)
-          if (data?.floorAsk) {
-            setPriceHistory(data.floorAsk)
+          console.log("[v0] Price history response:", data)
+
+          if (data?.events && Array.isArray(data.events) && data.events.length > 0) {
+            setPriceHistory(data.events)
           }
         } catch (error) {
           console.error("[v0] Error fetching price history:", error)
@@ -136,9 +140,10 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                       <svg viewBox="0 0 300 100" className="w-full h-full">
                         <polyline
                           points={priceHistory
-                            .map((point: any, i: number) => {
+                            .map((event: any, i: number) => {
                               const x = (i / (priceHistory.length - 1)) * 300
-                              const y = 100 - (point.price?.amount?.native || 0) * 10
+                              const price = event.floorAsk?.price?.amount?.native || 0
+                              const y = 100 - Math.min(price * 100, 90)
                               return `${x},${y}`
                             })
                             .join(" ")}
