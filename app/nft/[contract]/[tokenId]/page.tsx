@@ -15,82 +15,28 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
   const searchParams = useSearchParams()
   const [showSendModal, setShowSendModal] = useState(false)
   const [isCollectionOpen, setIsCollectionOpen] = useState(false)
-  const [collectionFloor, setCollectionFloor] = useState<string | null>(null)
-  const [topOffer, setTopOffer] = useState<string | null>(null)
-  const [collectionDescription, setCollectionDescription] = useState<string | null>(null)
-  const [collectionSupply, setCollectionSupply] = useState<number | null>(null)
   const { sdk } = useFarcaster()
 
   const nftDataString = searchParams.get("data")
   const nft = nftDataString ? JSON.parse(decodeURIComponent(nftDataString)) : null
 
-  useEffect(() => {
-    console.log("[v0] NFT Detail Page - NFT data:", nft)
-    console.log("[v0] NFT Detail Page - Contract address:", nft?.contractAddress)
-  }, [nft])
+  const collectionFloor = nft?.contract?.openSeaMetadata?.floorPrice
+    ? Number.parseFloat(nft.contract.openSeaMetadata.floorPrice).toFixed(4)
+    : nft?.collectionFloorPrice
+      ? Number.parseFloat(nft.collectionFloorPrice).toFixed(4)
+      : null
+
+  const collectionDescription = nft?.contract?.openSeaMetadata?.description || nft?.description || null
+  const collectionSupply = nft?.contract?.totalSupply || nft?.totalSupply || null
 
   useEffect(() => {
-    const fetchOpenSeaData = async () => {
-      if (!nft) {
-        console.log("[v0] Skipping API call - NFT is null")
-        return
-      }
-
-      if (!nft.contractAddress) {
-        console.log("[v0] Skipping API call - No contract address")
-        return
-      }
-
-      try {
-        console.log("[v0] Starting API fetch for contract:", nft.contractAddress)
-        const url = `/api/opensea-data?contract=${nft.contractAddress}`
-        console.log("[v0] Fetching URL:", url)
-
-        const response = await fetch(url)
-        console.log("[v0] API response status:", response.status)
-
-        if (response.ok) {
-          const data = await response.json()
-          console.log("[v0] Full API response data:", JSON.stringify(data, null, 2))
-
-          if (data.collectionFloor) {
-            const floorValue = Number.parseFloat(data.collectionFloor).toFixed(4)
-            console.log("[v0] Setting floor price:", floorValue)
-            setCollectionFloor(floorValue)
-          } else {
-            console.log("[v0] No floor price in response")
-            setCollectionFloor(null)
-          }
-
-          if (data.topOffer) {
-            const offerValue = Number.parseFloat(data.topOffer).toFixed(4)
-            console.log("[v0] Setting top offer:", offerValue)
-            setTopOffer(offerValue)
-          } else {
-            console.log("[v0] No top offer in response")
-            setTopOffer(null)
-          }
-
-          if (data.description) {
-            console.log("[v0] Setting collection description")
-            setCollectionDescription(data.description)
-          }
-
-          if (data.supply) {
-            console.log("[v0] Setting collection supply:", data.supply)
-            setCollectionSupply(data.supply)
-          }
-        } else {
-          const errorText = await response.text()
-          console.error("[v0] API error response:", errorText)
-        }
-      } catch (error) {
-        console.error("[v0] Error fetching collection data:", error)
-      }
-    }
-
-    console.log("[v0] useEffect running - NFT:", nft?.name, "Contract:", nft?.contractAddress)
-    fetchOpenSeaData()
+    console.log("[v0] NFT loaded:", {
+      name: nft?.name,
+      contract: nft?.contractAddress,
+      floor: collectionFloor,
+      supply: collectionSupply,
+      traits: nft?.raw?.metadata?.attributes?.length || nft?.traits?.length || 0,
+    })
   }, [nft])
 
   const handleHide = () => {
@@ -152,11 +98,6 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                   </span>
                 </div>
 
-                <div className="flex justify-between items-start border-t border-border pt-3">
-                  <span className="text-sm text-muted-foreground">Top offer</span>
-                  <span className="text-sm font-medium text-foreground">{topOffer ? `${topOffer} ETH` : "—"}</span>
-                </div>
-
                 <div className="border-t border-border pt-3">
                   <p className="text-sm text-muted-foreground mb-2">Price History</p>
                   <div className="h-32 bg-muted rounded flex items-center justify-center">
@@ -167,7 +108,7 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                 <div className="border-t border-border pt-3">
                   <p className="text-sm text-muted-foreground mb-1">About</p>
                   <p className="text-xs text-foreground">
-                    {collectionDescription || nft.description || "No description available"}
+                    {collectionDescription || "No description available"}
                     {nft.rawMetadata?.creator && (
                       <>
                         {" "}
@@ -189,17 +130,20 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                   <p className="text-sm text-muted-foreground mb-2">Traits</p>
                   {nft.traits && nft.traits.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2">
-                      {nft.traits.map((trait: any, index: number) => (
-                        <div key={index} className="bg-muted rounded p-2">
-                          <p className="text-[10px] text-muted-foreground uppercase mb-0.5">{trait.trait_type}</p>
-                          <p className="text-xs font-medium text-foreground truncate">{trait.value}</p>
-                          {trait.trait_count && collectionSupply && (
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
-                              {((trait.trait_count / collectionSupply) * 100).toFixed(1)}%
-                            </p>
-                          )}
-                        </div>
-                      ))}
+                      {nft.traits.map((trait: any, index: number) => {
+                        const percentage =
+                          trait.trait_count && collectionSupply
+                            ? ((trait.trait_count / Number(collectionSupply)) * 100).toFixed(1) + "%"
+                            : null
+
+                        return (
+                          <div key={index} className="bg-muted rounded p-2">
+                            <p className="text-[10px] text-muted-foreground uppercase mb-0.5">{trait.trait_type}</p>
+                            <p className="text-xs font-medium text-foreground truncate">{trait.value}</p>
+                            {percentage && <p className="text-[10px] text-muted-foreground mt-0.5">{percentage}</p>}
+                          </div>
+                        )
+                      })}
                     </div>
                   ) : (
                     <p className="text-xs text-foreground">No traits available</p>
