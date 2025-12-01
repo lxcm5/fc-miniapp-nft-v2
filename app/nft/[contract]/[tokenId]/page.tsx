@@ -17,23 +17,44 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
   const [isCollectionOpen, setIsCollectionOpen] = useState(false)
   const [collectionFloor, setCollectionFloor] = useState<string | null>(null)
   const [topOffer, setTopOffer] = useState<string | null>(null)
+  const [collectionDescription, setCollectionDescription] = useState<string | null>(null)
   const { sdk } = useFarcaster()
 
   const nftDataString = searchParams.get("data")
   const nft = nftDataString ? JSON.parse(decodeURIComponent(nftDataString)) : null
 
   useEffect(() => {
+    console.log("[v0] NFT Detail Page - NFT data:", nft)
+    console.log("[v0] NFT Detail Page - Contract address:", nft?.contractAddress)
+  }, [nft])
+
+  useEffect(() => {
     const fetchOpenSeaData = async () => {
-      if (!nft) return
+      if (!nft) {
+        console.log("[v0] Skipping API call - NFT is null")
+        return
+      }
+
+      if (!nft.contractAddress) {
+        console.log("[v0] Skipping API call - No contract address")
+        return
+      }
 
       try {
+        console.log("[v0] Fetching collection data for contract:", nft.contractAddress)
         const response = await fetch(`/api/opensea-data?contract=${nft.contractAddress}`)
+
+        console.log("[v0] API response status:", response.status)
 
         if (response.ok) {
           const data = await response.json()
           console.log("[v0] Collection data received:", data)
           setCollectionFloor(data.collectionFloor)
           setTopOffer(data.topOffer)
+          setCollectionDescription(data.description)
+        } else {
+          const errorText = await response.text()
+          console.error("[v0] API error response:", errorText)
         }
       } catch (error) {
         console.error("[v0] Error fetching collection data:", error)
@@ -116,17 +137,30 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
 
                 <div className="border-t border-border pt-3">
                   <p className="text-sm text-muted-foreground mb-1">About</p>
-                  <p className="text-xs text-foreground">Collection information will be displayed here.</p>
+                  <p className="text-xs text-foreground">
+                    {collectionDescription || nft.description || "No description available"}
+                  </p>
                 </div>
 
                 <div className="border-t border-border pt-3">
                   <p className="text-sm text-muted-foreground mb-1">Rarity</p>
-                  <p className="text-xs text-foreground">Rarity data will be displayed here.</p>
+                  <p className="text-xs text-foreground">Rarity data coming soon</p>
                 </div>
 
                 <div className="border-t border-border pt-3">
-                  <p className="text-sm text-muted-foreground mb-1">Traits</p>
-                  <p className="text-xs text-foreground">NFT traits will be displayed here.</p>
+                  <p className="text-sm text-muted-foreground mb-2">Traits</p>
+                  {nft.traits && nft.traits.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {nft.traits.map((trait, index) => (
+                        <div key={index} className="bg-muted rounded p-2">
+                          <p className="text-[10px] text-muted-foreground uppercase mb-0.5">{trait.trait_type}</p>
+                          <p className="text-xs font-medium text-foreground truncate">{trait.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-foreground">No traits available</p>
+                  )}
                 </div>
               </CollapsibleContent>
             </Collapsible>

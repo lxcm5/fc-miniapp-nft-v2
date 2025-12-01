@@ -15,6 +15,9 @@ interface NFT {
   tokenId: string
   contractAddress: string
   floorPrice?: string
+  description?: string
+  traits?: Array<{ trait_type: string; value: string }>
+  rawMetadata?: any
 }
 
 interface NFTGridProps {
@@ -97,6 +100,9 @@ export function NFTGrid({
               tokenId: nft.tokenId,
               contractAddress: nft.contract.address,
               floorPrice: nft.contract.openSeaMetadata?.floorPrice?.toString() || "—",
+              description: nft.raw?.metadata?.description || nft.description,
+              traits: nft.raw?.metadata?.attributes || [],
+              rawMetadata: nft.raw?.metadata,
             }
           })
 
