@@ -34,15 +34,10 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
     }
   }, [nft])
 
-  const collectionFloor =
-    nft?.contract?.openSeaMetadata?.floorPrice ||
-    nft?.collectionFloorPrice ||
-    nft?.contract?.openSea?.floorPrice ||
-    null
-  const formattedFloor = collectionFloor ? Number.parseFloat(collectionFloor).toFixed(4) : null
+  const formattedFloor = nft?.floorPrice && nft.floorPrice !== "—" ? nft.floorPrice : null
 
-  const collectionDescription = nft?.contract?.openSeaMetadata?.description || nft?.description || null
-  const collectionSupply = nft?.contract?.totalSupply || nft?.totalSupply || null
+  const collectionDescription = nft?.description || null
+  const collectionSupply = nft?.supply || null
 
   const handleHide = () => {
     if (!nft) return
