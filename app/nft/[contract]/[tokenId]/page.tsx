@@ -93,6 +93,64 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
     fetchOpenSeaData()
   }, [nft])
 
+  useEffect(() => {
+    const fetchCollectionData = async () => {
+      if (!nft?.contractAddress) {
+        console.log("[v0] No contract address, skipping API call")
+        return
+      }
+
+      try {
+        console.log("[v0] Fetching collection data for:", nft.contractAddress)
+
+        const response = await fetch(
+          `https://api.reservoir.tools/collections/v7?contract=${nft.contractAddress}&includeTopBid=true`,
+        )
+
+        if (!response.ok) {
+          console.error("[v0] Reservoir API error:", response.status)
+          return
+        }
+
+        const data = await response.json()
+        console.log("[v0] Reservoir API response:", data)
+
+        if (data.collections && data.collections.length > 0) {
+          const collection = data.collections[0]
+          console.log("[v0] Collection data:", collection)
+
+          // Floor price
+          if (collection.floorAsk?.price?.amount?.native) {
+            const floor = Number(collection.floorAsk.price.amount.native).toFixed(4)
+            console.log("[v0] Setting floor:", floor)
+            setCollectionFloor(floor)
+          }
+
+          // Top bid
+          if (collection.topBid?.price?.amount?.native) {
+            const topBid = Number(collection.topBid.price.amount.native).toFixed(4)
+            console.log("[v0] Setting top bid:", topBid)
+            setTopOffer(topBid)
+          }
+
+          // Description
+          if (collection.description) {
+            setCollectionDescription(collection.description)
+          }
+
+          // Token count (supply)
+          if (collection.tokenCount) {
+            setCollectionSupply(Number(collection.tokenCount))
+          }
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching collection data:", error)
+      }
+    }
+
+    fetchCollectionData()
+  }, [nft?.contractAddress])
+
   const handleHide = () => {
     if (!nft) return
 
