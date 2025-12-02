@@ -254,8 +254,23 @@ export function NFTGrid({
                 handleLongPress(nft.id)
               }}
               onTouchStart={(e) => {
+                const startY = e.touches[0].clientY
+                const startX = e.touches[0].clientX
                 const timeout = setTimeout(() => handleLongPress(nft.id), 500)
                 ;(e.currentTarget as any).longPressTimeout = timeout
+                ;(e.currentTarget as any).startY = startY
+                ;(e.currentTarget as any).startX = startX
+              }}
+              onTouchMove={(e) => {
+                const currentY = e.touches[0].clientY
+                const currentX = e.touches[0].clientX
+                const startY = (e.currentTarget as any).startY || currentY
+                const startX = (e.currentTarget as any).startX || currentX
+
+                // If moved more than 10px, it's a scroll not a long press
+                if (Math.abs(currentY - startY) > 10 || Math.abs(currentX - startX) > 10) {
+                  clearTimeout((e.currentTarget as any).longPressTimeout)
+                }
               }}
               onTouchEnd={(e) => {
                 clearTimeout((e.currentTarget as any).longPressTimeout)
@@ -299,8 +314,23 @@ export function NFTGrid({
               handleLongPress(nft.id)
             }}
             onTouchStart={(e) => {
+              const startY = e.touches[0].clientY
+              const startX = e.touches[0].clientX
               const timeout = setTimeout(() => handleLongPress(nft.id), 500)
               ;(e.currentTarget as any).longPressTimeout = timeout
+              ;(e.currentTarget as any).startY = startY
+              ;(e.currentTarget as any).startX = startX
+            }}
+            onTouchMove={(e) => {
+              const currentY = e.touches[0].clientY
+              const currentX = e.touches[0].clientX
+              const startY = (e.currentTarget as any).startY || currentY
+              const startX = (e.currentTarget as any).startX || currentX
+
+              // If moved more than 10px, it's a scroll not a long press
+              if (Math.abs(currentY - startY) > 10 || Math.abs(currentX - startX) > 10) {
+                clearTimeout((e.currentTarget as any).longPressTimeout)
+              }
             }}
             onTouchEnd={(e) => {
               clearTimeout((e.currentTarget as any).longPressTimeout)

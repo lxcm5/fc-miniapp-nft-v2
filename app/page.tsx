@@ -114,7 +114,7 @@ export default function Page() {
 
   const handleExpandHeader = () => {
     console.log("[v0] Expand button clicked")
-    window.scrollTo({ top: 0, behavior: "smooth" })
+    window.scrollTo({ top: 0 })
   }
 
   return (
