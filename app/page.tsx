@@ -4,19 +4,70 @@ import { WalletBalance } from "@/components/wallet-balance"
 import { NFTGrid } from "@/components/nft-grid"
 import { SendNFTModal } from "@/components/send-nft-modal"
 import { useFarcaster } from "@/app/providers"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 
 export default function Page() {
-  const { isSDKLoaded } = useFarcaster()
+  const { isSDKLoaded, walletAddress, ethBalance } = useFarcaster()
   const [gridMode, setGridMode] = useState<2 | 3 | 4 | "list">(3)
   const [selectedNFTs, setSelectedNFTs] = useState<string[]>([])
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [isSendModalOpen, setIsSendModalOpen] = useState(false)
   const [sortBy, setSortBy] = useState<"date" | "name" | "collection" | "floor">("date")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false)
+  const [nftCount, setNftCount] = useState<number>(0)
+  const [nftTotalValue, setNftTotalValue] = useState<number>(0)
   const router = useRouter()
+
+  useEffect(() => {
+    const fetchNFTStats = async () => {
+      if (!walletAddress) return
+
+      try {
+        const response = await fetch(`/api/nfts?address=${walletAddress}`)
+        const data = await response.json()
+
+        if (data.error) return
+
+        const allNFTs = data.nfts || []
+        const hiddenNFTs = JSON.parse(localStorage.getItem("hidden_nfts") || "[]")
+        const visibleNFTs = allNFTs.filter((nft: any) => {
+          const nftId = `${nft.contract.address}-${nft.tokenId.tokenId || nft.tokenId}`
+          return !hiddenNFTs.includes(nftId)
+        })
+
+        const nftsWithFloor = visibleNFTs.filter((nft: any) => {
+          const floorPrice = nft.contract.openSeaMetadata?.floorPrice
+          return floorPrice && floorPrice > 0
+        })
+
+        const totalValue = nftsWithFloor.reduce((sum: number, nft: any) => {
+          const floorPrice = nft.contract.openSeaMetadata?.floorPrice || 0
+          return sum + Number(floorPrice)
+        }, 0)
+
+        setNftCount(visibleNFTs.length)
+        setNftTotalValue(totalValue)
+      } catch (error) {
+        console.error("[v0] Error fetching NFT stats:", error)
+      }
+    }
+
+    fetchNFTStats()
+  }, [walletAddress])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 100 && !isHeaderCollapsed) {
+        setIsHeaderCollapsed(true)
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [isHeaderCollapsed])
 
   const cycleGridMode = () => {
     if (gridMode === 2) setGridMode(3)
@@ -49,104 +100,158 @@ export default function Page() {
     setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
   }
 
+  const ethToUsd = 2850
+  const nftUsdValue = (nftTotalValue * ethToUsd).toFixed(2)
+
+  const handleCopy = () => {
+    if (walletAddress) {
+      navigator.clipboard.writeText(walletAddress)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="max-w-6xl mx-auto px-4 py-4">
-        <header className="mb-5.5">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-[1.35rem] font-bold text-foreground">NFT aWallet</h1>
-            <Button variant="outline" size="sm" onClick={() => router.push("/hidden")} className="bg-transparent">
-              Hidden NFTs
-            </Button>
-          </div>
-        </header>
-
-        {!isSDKLoaded ? (
-          <div className="mb-4 text-sm text-muted-foreground">Loading Farcaster SDK...</div>
-        ) : (
-          <>
-            <div className="mb-5.5">
-              <WalletBalance />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-semibold text-foreground">My Collection</h2>
-                <div className="flex items-center gap-2">
+        <div className="sticky top-0 bg-background z-10 transition-all duration-300">
+          <header className={`transition-all duration-300 ${isHeaderCollapsed ? "mb-2" : "mb-5.5"}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                {isHeaderCollapsed && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={cycleSortMode}
-                    className="flex items-center gap-2 bg-transparent capitalize"
+                    onClick={() => setIsHeaderCollapsed(false)}
+                    className="bg-transparent px-2"
                   >
-                    {sortBy === "date" && "Date"}
-                    {sortBy === "name" && "Name"}
-                    {sortBy === "collection" && "Collection"}
-                    {sortBy === "floor" && "Floor"}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleSortDirection}
-                    className="flex items-center gap-1 bg-transparent px-2"
-                  >
-                    {sortDirection === "asc" ? (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={cycleGridMode}
-                    className="flex items-center gap-2 bg-transparent"
-                  >
-                    {gridMode === "list" ? (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 6h16M4 12h16M4 18h16"
-                          />
-                        </svg>
-                        List
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                          />
-                        </svg>
-                        {gridMode}×
-                      </>
-                    )}
-                  </Button>
-                </div>
+                )}
+                {!isHeaderCollapsed && <h1 className="text-[1.35rem] font-bold text-foreground">NFT aWallet</h1>}
               </div>
-              <NFTGrid
-                gridMode={gridMode}
-                selectedNFTs={selectedNFTs}
-                setSelectedNFTs={setSelectedNFTs}
-                isSelectionMode={isSelectionMode}
-                setIsSelectionMode={setIsSelectionMode}
-                isHiddenPage={false}
-                sortBy={sortBy}
-                sortDirection={sortDirection}
-              />
+              <Button variant="outline" size="sm" onClick={() => router.push("/hidden")} className="bg-transparent">
+                Hidden NFTs
+              </Button>
             </div>
-          </>
-        )}
+
+            {isHeaderCollapsed ? (
+              <div className="flex items-center justify-between text-sm mb-3 py-2 px-3 bg-card rounded-lg border border-border">
+                <div className="flex items-center gap-4">
+                  <span className="font-semibold">{nftCount} NFTs</span>
+                  <span className="text-muted-foreground">
+                    {nftTotalValue.toFixed(3)} ETH (${nftUsdValue})
+                  </span>
+                </div>
+                {walletAddress && (
+                  <button
+                    onClick={handleCopy}
+                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground font-mono"
+                  >
+                    {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ) : null}
+          </header>
+
+          {!isSDKLoaded ? (
+            <div className="mb-4 text-sm text-muted-foreground">Loading Farcaster SDK...</div>
+          ) : (
+            <>
+              {!isHeaderCollapsed && (
+                <div className="mb-5.5">
+                  <WalletBalance />
+                </div>
+              )}
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  {!isHeaderCollapsed && <h2 className="text-sm font-semibold text-foreground">My Collection</h2>}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={cycleSortMode}
+                      className="flex items-center gap-2 bg-transparent capitalize"
+                    >
+                      {sortBy === "date" && "Date"}
+                      {sortBy === "name" && "Name"}
+                      {sortBy === "collection" && "Collection"}
+                      {sortBy === "floor" && "Floor"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleSortDirection}
+                      className="flex items-center gap-1 bg-transparent px-2"
+                    >
+                      {sortDirection === "asc" ? (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={cycleGridMode}
+                      className="flex items-center gap-2 bg-transparent"
+                    >
+                      {gridMode === "list" ? (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 6h16M4 12h16M4 18h16"
+                            />
+                          </svg>
+                          List
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                            />
+                          </svg>
+                          {gridMode}×
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                <NFTGrid
+                  gridMode={gridMode}
+                  selectedNFTs={selectedNFTs}
+                  setSelectedNFTs={setSelectedNFTs}
+                  isSelectionMode={isSelectionMode}
+                  setIsSelectionMode={setIsSelectionMode}
+                  isHiddenPage={false}
+                  sortBy={sortBy}
+                  sortDirection={sortDirection}
+                />
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {isSelectionMode && selectedNFTs.length > 0 && (
