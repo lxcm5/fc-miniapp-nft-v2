@@ -124,29 +124,23 @@ export default function Page() {
           <header className={`${isHeaderCollapsed ? "mb-2" : "mb-5.5"}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div
-                  className={`transition-opacity duration-200 ${isHeaderCollapsed ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}
-                >
+                {isHeaderCollapsed && (
                   <Button variant="outline" size="sm" onClick={handleExpandHeader} className="bg-transparent px-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </Button>
-                </div>
-                <div
-                  className={`transition-opacity duration-200 ${!isHeaderCollapsed ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}
-                >
+                )}
+                {!isHeaderCollapsed && (
                   <h1 className="text-[1.35rem] font-bold text-foreground whitespace-nowrap">NFT aWallet</h1>
-                </div>
+                )}
               </div>
               <Button variant="outline" size="sm" onClick={() => router.push("/hidden")} className="bg-transparent">
                 Hidden NFTs
               </Button>
             </div>
 
-            <div
-              className={`transition-all duration-200 ${isHeaderCollapsed ? "opacity-100 max-h-20" : "opacity-0 max-h-0 overflow-hidden"}`}
-            >
+            {isHeaderCollapsed && (
               <div className="mb-3">
                 <div className="flex items-center justify-between text-sm py-2 px-3 bg-card rounded-lg border border-border">
                   <div className="flex items-center gap-4">
@@ -173,27 +167,21 @@ export default function Page() {
                   )}
                 </div>
               </div>
-            </div>
+            )}
           </header>
 
           {!isSDKLoaded ? (
             <div className="mb-4 text-sm text-muted-foreground">Loading Farcaster SDK...</div>
           ) : (
             <>
-              <div
-                className={`transition-all duration-200 ${!isHeaderCollapsed ? "opacity-100 max-h-96" : "opacity-0 max-h-0 overflow-hidden"}`}
-              >
+              {!isHeaderCollapsed && (
                 <div className="mb-5.5">
                   <WalletBalance />
                 </div>
-              </div>
+              )}
 
               <div className="flex items-center justify-between mb-3">
-                <div
-                  className={`transition-opacity duration-200 ${!isHeaderCollapsed ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}
-                >
-                  <h2 className="text-sm font-semibold text-foreground">My Collection</h2>
-                </div>
+                {!isHeaderCollapsed && <h2 className="text-sm font-semibold text-foreground">My Collection</h2>}
                 <div className="flex items-center gap-2 ml-auto">
                   <Button
                     variant="outline"

@@ -39,36 +39,40 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
   }, [nft])
 
   useEffect(() => {
-    if (nft?.contractAddress) {
-      const fetchPriceHistory = async () => {
-        setLoadingHistory(true)
-        console.log("[v0 Client] Fetching collection price history for:", nft.contractAddress)
-        console.log("[v0 Client] Request URL:", `/api/nfts?contractAddress=${nft.contractAddress}&history=true`)
+    console.log("[v0] NFT Detail Page - useEffect triggered")
+    console.log("[v0] Contract address:", nft?.contractAddress)
 
-        try {
-          const response = await fetch(`/api/nfts?contractAddress=${nft.contractAddress}&history=true`)
-          console.log("[v0 Client] Response status:", response.status)
-
-          const data = await response.json()
-          console.log("[v0 Client] Collection sales history response:", data)
-
-          if (data?.sales && Array.isArray(data.sales) && data.sales.length > 0) {
-            setPriceHistory(data.sales)
-            console.log("[v0 Client] Chart data set with", data.sales.length, "points")
-          } else {
-            console.log("[v0 Client] No sales data available")
-          }
-        } catch (error) {
-          console.error("[v0 Client] Error fetching price history:", error)
-        } finally {
-          setLoadingHistory(false)
-        }
-      }
-
-      fetchPriceHistory()
-    } else {
-      console.log("[v0 Client] No contract address available for price history")
+    if (!nft?.contractAddress) {
+      console.log("[v0] No contract address, skipping price history fetch")
+      return
     }
+
+    const fetchPriceHistory = async () => {
+      setLoadingHistory(true)
+      console.log("[v0 Client] Fetching collection price history for:", nft.contractAddress)
+      console.log("[v0 Client] Request URL:", `/api/nfts?contractAddress=${nft.contractAddress}&history=true`)
+
+      try {
+        const response = await fetch(`/api/nfts?contractAddress=${nft.contractAddress}&history=true`)
+        console.log("[v0 Client] Response status:", response.status)
+
+        const data = await response.json()
+        console.log("[v0 Client] Collection sales history response:", data)
+
+        if (data?.sales && Array.isArray(data.sales) && data.sales.length > 0) {
+          setPriceHistory(data.sales)
+          console.log("[v0 Client] Chart data set with", data.sales.length, "points")
+        } else {
+          console.log("[v0 Client] No sales data available")
+        }
+      } catch (error) {
+        console.error("[v0 Client] Error fetching price history:", error)
+      } finally {
+        setLoadingHistory(false)
+      }
+    }
+
+    fetchPriceHistory()
   }, [nft?.contractAddress])
 
   const formattedFloor = nft?.floorPrice && nft.floorPrice !== "—" ? nft.floorPrice : null
