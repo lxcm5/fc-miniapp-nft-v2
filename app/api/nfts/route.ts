@@ -9,45 +9,57 @@ export async function GET(request: NextRequest) {
 
   if (history === "true" && contractAddress) {
     try {
-      console.log("[v0] Fetching collection sales history for:", contractAddress)
+      console.log("[v0 API] Fetching collection sales history for:", contractAddress)
 
-      // Use Alchemy to get recent sales for the entire collection
       const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/${process.env.ALCHEMY_API_KEY}/getNFTSales?contractAddress=${contractAddress}&order=desc&limit=100`
 
       const response = await fetch(alchemyUrl)
       const data = await response.json()
 
-      console.log("[v0] Collection sales data from Alchemy:", data)
+      console.log("[v0 API] Raw Alchemy response:", JSON.stringify(data, null, 2))
 
       if (data.nftSales && data.nftSales.length > 0) {
         // Group sales by date and calculate average price per day
         const salesByDate = data.nftSales.reduce((acc: any, sale: any) => {
+          // Try multiple fields to get the price
+          const priceInWei = sale.sellerFee?.amount || sale.royaltyFee?.amount || sale.protocolFee?.amount
+
+          if (!priceInWei) {
+            console.log("[v0 API] Sale without price:", sale)
+            return acc
+          }
+
           const date = new Date(sale.blockTimestamp).toLocaleDateString()
-          const price = Number.parseFloat(sale.sellerFee?.amount || "0")
+          // Convert from wei to ETH (divide by 10^18)
+          const priceInEth = Number.parseFloat(priceInWei) / 1e18
+
+          console.log("[v0 API] Processing sale:", { date, priceInWei, priceInEth })
 
           if (!acc[date]) {
             acc[date] = { total: 0, count: 0 }
           }
-          acc[date].total += price
+          acc[date].total += priceInEth
           acc[date].count += 1
 
           return acc
         }, {})
 
-        // Convert to array of {date, price} for chart
         const chartData = Object.entries(salesByDate)
           .map(([date, data]: [string, any]) => ({
             date,
-            price: data.total / data.count, // Average price for the day
+            price: data.total / data.count,
           }))
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+        console.log("[v0 API] Final chart data:", chartData)
 
         return NextResponse.json({ sales: chartData })
       }
 
+      console.log("[v0 API] No sales found in response")
       return NextResponse.json({ sales: [] })
     } catch (error) {
-      console.error("[v0] Error fetching sales history:", error)
+      console.error("[v0 API] Error fetching sales history:", error)
       return NextResponse.json({ error: "Failed to fetch sales history" }, { status: 500 })
     }
   }
