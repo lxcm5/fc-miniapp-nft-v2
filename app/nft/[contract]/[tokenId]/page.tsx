@@ -39,24 +39,18 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
   }, [nft])
 
   useEffect(() => {
-    if (nft?.contractAddress && nft?.tokenId) {
+    if (nft?.contractAddress) {
       const fetchPriceHistory = async () => {
         setLoadingHistory(true)
-        console.log("[v0] Fetching price history for:", nft.contractAddress, nft.tokenId)
+        console.log("[v0] Fetching collection price history for:", nft.contractAddress)
         try {
-          // Use Alchemy API to get NFT sales
-          const response = await fetch(`/api/nfts?address=${nft.contractAddress}&tokenId=${nft.tokenId}&history=true`)
+          const response = await fetch(`/api/nfts?contractAddress=${nft.contractAddress}&history=true`)
           const data = await response.json()
-          console.log("[v0] Sales history response:", data)
+          console.log("[v0] Collection sales history response:", data)
 
           if (data?.sales && Array.isArray(data.sales) && data.sales.length > 0) {
-            // Transform sales data for chart
-            const chartData = data.sales.map((sale: any) => ({
-              date: new Date(sale.timestamp).toLocaleDateString(),
-              price: Number.parseFloat(sale.price) || 0,
-            }))
-            setPriceHistory(chartData)
-            console.log("[v0] Chart data:", chartData)
+            setPriceHistory(data.sales)
+            console.log("[v0] Chart data set:", data.sales)
           }
         } catch (error) {
           console.error("[v0] Error fetching price history:", error)
@@ -67,7 +61,7 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
 
       fetchPriceHistory()
     }
-  }, [nft?.contractAddress, nft?.tokenId])
+  }, [nft?.contractAddress])
 
   const formattedFloor = nft?.floorPrice && nft.floorPrice !== "—" ? nft.floorPrice : null
 
