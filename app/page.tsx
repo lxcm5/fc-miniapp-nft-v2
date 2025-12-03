@@ -17,7 +17,6 @@ export default function Page() {
   const [sortBy, setSortBy] = useState<"date" | "name" | "collection" | "floor">("date")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false)
-  const [manuallyExpanded, setManuallyExpanded] = useState(false)
   const [nftCount, setNftCount] = useState<number>(0)
   const [nftTotalValue, setNftTotalValue] = useState<number>(0)
   const router = useRouter()
@@ -59,19 +58,6 @@ export default function Page() {
     fetchNFTStats()
   }, [walletAddress])
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 100) {
-        setIsHeaderCollapsed(true)
-      } else {
-        setIsHeaderCollapsed(false)
-      }
-    }
-
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-
   const cycleGridMode = () => {
     if (gridMode === 2) setGridMode(3)
     else if (gridMode === 3) setGridMode(4)
@@ -112,9 +98,8 @@ export default function Page() {
     }
   }
 
-  const handleExpandHeader = () => {
-    console.log("[v0] Expand button clicked")
-    window.scrollTo({ top: 0 })
+  const toggleHeaderCollapse = () => {
+    setIsHeaderCollapsed((prev) => !prev)
   }
 
   return (
@@ -124,13 +109,16 @@ export default function Page() {
           <header className={`${isHeaderCollapsed ? "mb-2" : "mb-5.5"}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                {isHeaderCollapsed && (
-                  <Button variant="outline" size="sm" onClick={handleExpandHeader} className="bg-transparent px-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" onClick={toggleHeaderCollapse} className="bg-transparent px-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={isHeaderCollapsed ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"}
+                    />
+                  </svg>
+                </Button>
                 {!isHeaderCollapsed && (
                   <h1 className="text-[1.35rem] font-bold text-foreground whitespace-nowrap">NFT aWallet</h1>
                 )}
