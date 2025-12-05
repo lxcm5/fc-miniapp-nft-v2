@@ -145,7 +145,10 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                               background: "hsl(var(--background))",
                               border: "1px solid hsl(var(--border))",
                             }}
-                            formatter={(value: number) => [`${value.toFixed(4)} ETH`, "Price"]}
+                            formatter={(value: number) => {
+                              if (typeof value !== "number" || !Number.isFinite(value)) return ["—", "Price"]
+                              return [`${value.toFixed(4)} ETH`, "Price"]
+                            }}
                           />
                           <Line
                             type="monotone"

@@ -1,5 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+function parseWeiToEth(raw?: string): number {
+  if (!raw) return 0
+
+  try {
+    // Alchemy usually returns amount as string (hex or decimal)
+    const valueBigInt = raw.startsWith("0x") ? BigInt(raw) : BigInt(raw)
+    return Number(valueBigInt) / 1e18
+  } catch (e) {
+    console.warn("[v0 API] Failed to parse amount:", raw, e)
+    return 0
+  }
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const walletAddress = searchParams.get("address")
@@ -14,42 +27,54 @@ export async function GET(request: NextRequest) {
       const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/${process.env.ALCHEMY_API_KEY}/getNFTSales?contractAddress=${contractAddress}&order=desc&limit=100`
 
       const response = await fetch(alchemyUrl)
-      const data = await response.json()
+      if (!response.ok) {
+        console.error("[v0 API] Alchemy response not ok:", response.status, await response.text())
+        return NextResponse.json({ sales: [] })
+      }
 
+      const data = await response.json()
       console.log("[v0 API] Raw Alchemy response:", JSON.stringify(data, null, 2))
 
       if (data.nftSales && data.nftSales.length > 0) {
-        // Group sales by date and calculate average price per day
-        const salesByDate = data.nftSales.reduce((acc: any, sale: any) => {
-          // Try multiple fields to get the price
-          const priceInWei = sale.sellerFee?.amount || sale.royaltyFee?.amount || sale.protocolFee?.amount
+        type DayAgg = { total: number; count: number }
 
-          if (!priceInWei) {
-            console.log("[v0 API] Sale without price:", sale)
+        const salesByDate = data.nftSales.reduce((acc: Record<string, DayAgg>, sale: any) => {
+          // Sum all fees to get total sale price
+          const sellerEth = parseWeiToEth(sale.sellerFee?.amount)
+          const protocolEth = parseWeiToEth(sale.protocolFee?.amount)
+          const royaltyEth = parseWeiToEth(sale.royaltyFee?.amount)
+
+          const priceInEth = sellerEth + protocolEth + royaltyEth
+
+          if (!priceInEth || !Number.isFinite(priceInEth) || priceInEth <= 0) {
+            console.log("[v0 API] Sale without valid price:", {
+              sellerEth,
+              protocolEth,
+              royaltyEth,
+            })
             return acc
           }
 
-          const date = new Date(sale.blockTimestamp).toLocaleDateString()
-          // Convert from wei to ETH (divide by 10^18)
-          const priceInEth = Number.parseFloat(priceInWei) / 1e18
+          // Normalized date key - YYYY-MM-DD
+          const iso = sale.blockTimestamp // "2025-12-05T10:11:12Z"
+          const dateKey = iso ? iso.slice(0, 10) : new Date().toISOString().slice(0, 10)
 
-          console.log("[v0 API] Processing sale:", { date, priceInWei, priceInEth })
-
-          if (!acc[date]) {
-            acc[date] = { total: 0, count: 0 }
+          if (!acc[dateKey]) {
+            acc[dateKey] = { total: 0, count: 0 }
           }
-          acc[date].total += priceInEth
-          acc[date].count += 1
+
+          acc[dateKey].total += priceInEth
+          acc[dateKey].count += 1
 
           return acc
         }, {})
 
         const chartData = Object.entries(salesByDate)
-          .map(([date, data]: [string, any]) => ({
-            date,
-            price: data.total / data.count,
+          .map(([date, agg]) => ({
+            date, // format "2025-12-05"
+            price: agg.total / agg.count,
           }))
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .sort((a, b) => a.date.localeCompare(b.date))
 
         console.log("[v0 API] Final chart data:", chartData)
 
