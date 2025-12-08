@@ -106,7 +106,7 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="max-w-6xl mx-auto px-4 py-4">
-        <div className="sticky top-0 bg-background z-50 pb-2 -mx-4 px-4 shadow-sm">
+        <div className="sticky top-0 bg-background z-50 pb-4 -mx-4 px-4">
           <header className={`${isHeaderCollapsed ? "mb-2" : "mb-5.5"}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
