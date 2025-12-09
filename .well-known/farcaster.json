@@ -21,8 +21,20 @@
     "primaryCategory": "utility",
     "tagline": "Manage NFTs in Farcaster",
     "buttonTitle": "Open Mini App",
+
     "ogTitle": "Farcaster NFT aWallet",
     "ogDescription": "Manage NFTs and assets in real-time",
-    "tags": ["nft", "wallet"]
+
+    "tags": ["nft", "wallet"],
+
+    "heroImageUrl": "https://miniapp-nft-v2.vercel.app/hero.png",
+    "ogImageUrl": "https://miniapp-nft-v2.vercel.app/og.png",
+    "screenshotUrls": [
+      "https://miniapp-nft-v2.vercel.app/screens/screen1.png",
+      "https://miniapp-nft-v2.vercel.app/screens/screen2.png",
+      "https://miniapp-nft-v2.vercel.app/screens/screen3.png"
+    ],
+
+    "noindex": false
   }
 }
