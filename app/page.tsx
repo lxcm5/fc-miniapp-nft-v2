@@ -107,8 +107,8 @@ export default function Page() {
     <div className="min-h-screen bg-background pb-20">
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="sticky top-0 bg-background z-50 pb-4 -mx-4 px-4">
-          <header className={`${isHeaderCollapsed ? "mb-2" : "mb-5.5"}`}>
-            <div className="flex items-center justify-between mb-4">
+          <header className={`${isHeaderCollapsed ? "mb-1" : "mb-4"}`}>
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={toggleHeaderCollapse} className="bg-transparent px-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,7 +127,7 @@ export default function Page() {
             </div>
 
             {isHeaderCollapsed && (
-              <div className="mb-3">
+              <div className="mb-2">
                 <div className="flex items-center justify-between text-sm py-2 px-3 bg-card rounded-lg border border-border">
                   <div className="flex items-center gap-4">
                     <span className="font-semibold">{nftCount} NFTs</span>
@@ -157,16 +157,16 @@ export default function Page() {
           </header>
 
           {!isSDKLoaded ? (
-            <div className="mb-4 text-sm text-muted-foreground">Loading Farcaster SDK...</div>
+            <div className="mb-2 text-sm text-muted-foreground">Loading Farcaster SDK...</div>
           ) : (
             <>
               {!isHeaderCollapsed && (
-                <div className="mb-5.5">
+                <div className="mb-4">
                   <WalletBalance />
                 </div>
               )}
 
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 {!isHeaderCollapsed && <h2 className="text-sm font-semibold text-foreground">My Collection</h2>}
                 <div className="flex items-center gap-2 ml-auto">
                   <Button
