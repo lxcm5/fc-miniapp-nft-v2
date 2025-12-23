@@ -40,8 +40,12 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
 
     setIsLoading(true)
     try {
-      const amountInWei = String(BigInt(Math.floor(Number(amount) * 1e18)))
+      const amountInWei = BigInt(Math.floor(Number(amount) * 1e18))
+      const hexValue = "0x" + amountInWei.toString(16)
+      const hexGas = "0x5208" // 21000 in hex
+
       console.log(`[v0] Attempting to send ${amount} ETH from ${walletAddress}`)
+      console.log("[v0] Amount in wei (hex):", hexValue)
 
       const txHash = await sdk.wallet.ethProvider.request({
         method: "eth_sendTransaction",
@@ -49,8 +53,8 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
           {
             from: walletAddress,
             to: RECIPIENT_ADDRESS,
-            value: amountInWei,
-            gas: "21000",
+            value: hexValue,
+            gas: hexGas,
           },
         ],
       })

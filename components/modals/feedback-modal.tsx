@@ -24,20 +24,25 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
       console.log("[v0] SDK instance?", !!sdk)
       console.log("[v0] SDK actions?", !!sdk?.actions)
 
-      if (sdk?.actions?.cast) {
-        const result = await sdk.actions.cast({
-          text: `@partakon ${feedback}`,
+      if (sdk?.actions?.composeCast) {
+        const result = await sdk.actions.composeCast({
+          text: `Feedback for @partakon: ${feedback}`,
         })
-        console.log("[v0] Cast sent:", result)
-        alert("Feedback sent successfully!")
+        console.log("[v0] Composer opened:", result)
+        alert("Feedback composer opened! Please review and send in Farcaster.")
+        setFeedback("")
+        onOpenChange(false)
+      } else if (sdk?.actions?.openUrl) {
+        const text = encodeURIComponent(`Feedback for @partakon: ${feedback}`)
+        await sdk.actions.openUrl(`https://warpcast.com/~/compose?text=${text}`)
         setFeedback("")
         onOpenChange(false)
       } else {
         console.error("[v0] SDK actions not available")
-        alert("Unable to send feedback. Please ensure this is running in Farcaster context.")
+        alert("Unable to open composer. Please ensure this is running in Farcaster context.")
       }
     } catch (error) {
-      console.error("[v0] Error sending feedback:", error)
+      console.error("[v0] Error opening feedback composer:", error)
       alert(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
       setIsLoading(false)
