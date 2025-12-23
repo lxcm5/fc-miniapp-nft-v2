@@ -8,6 +8,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { ArrowUpNarrowWide, ArrowDownWideNarrow } from "lucide-react"
+import { Menu } from "@/components/menu-dropdown"
 
 export default function Page() {
   const { isSDKLoaded, walletAddress, ethBalance } = useFarcaster()
@@ -121,9 +122,12 @@ export default function Page() {
                   </svg>
                 </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={() => router.push("/hidden")} className="bg-transparent">
-                Hidden NFTs
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => router.push("/hidden")} className="bg-transparent">
+                  Hidden NFTs
+                </Button>
+                <Menu />
+              </div>
             </div>
 
             {isHeaderCollapsed && (
