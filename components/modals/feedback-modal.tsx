@@ -13,32 +13,32 @@ interface FeedbackModalProps {
 export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
   const [feedback, setFeedback] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const { sdk } = useFarcaster()
+  const { sdk, isSDKLoaded } = useFarcaster()
 
   const handleSend = async () => {
     if (!feedback.trim()) return
 
     setIsLoading(true)
     try {
-      console.log("[v0] Sending feedback to @partakon:", feedback)
+      console.log("[v0] SDK ready?", isSDKLoaded)
+      console.log("[v0] SDK instance?", !!sdk)
+      console.log("[v0] SDK actions?", !!sdk?.actions)
 
-      if (sdk?.user?.fid) {
+      if (sdk?.actions?.cast) {
         const result = await sdk.actions.cast({
           text: `@partakon ${feedback}`,
         })
         console.log("[v0] Cast sent:", result)
+        alert("Feedback sent successfully!")
+        setFeedback("")
+        onOpenChange(false)
       } else {
-        console.error("[v0] SDK user not ready:", sdk?.user?.fid)
-        alert("Unable to send feedback. Please ensure Farcaster is connected.")
-        return
+        console.error("[v0] SDK actions not available")
+        alert("Unable to send feedback. Please ensure this is running in Farcaster context.")
       }
-
-      alert("Feedback sent successfully!")
-      setFeedback("")
-      onOpenChange(false)
     } catch (error) {
       console.error("[v0] Error sending feedback:", error)
-      alert(`Error sending feedback: ${error instanceof Error ? error.message : "Unknown error"}`)
+      alert(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
       setIsLoading(false)
     }
