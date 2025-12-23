@@ -36,13 +36,13 @@ export function MenuDropdown() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48 py-2">
-          <DropdownMenuItem onClick={() => setAboutOpen(true)} className="py-2.5 cursor-pointer">
+          <DropdownMenuItem onClick={() => setAboutOpen(true)} className="py-2.5 cursor-pointer hover:bg-muted">
             About
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleCastFeedback} className="py-2.5 cursor-pointer">
+          <DropdownMenuItem onClick={handleCastFeedback} className="py-2.5 cursor-pointer hover:bg-muted">
             Cast Feedback
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setDonateOpen(true)} className="py-2.5 cursor-pointer">
+          <DropdownMenuItem onClick={() => setDonateOpen(true)} className="py-2.5 cursor-pointer hover:bg-muted">
             Donate
           </DropdownMenuItem>
         </DropdownMenuContent>
