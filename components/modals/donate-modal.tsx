@@ -27,7 +27,7 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
     setIsLoading(true)
     try {
       const amountInWei = String(BigInt(Math.floor(Number(amount) * 1e18)))
-      console.log(`[v0] Attempting to send ${amount} ETH to ${RECIPIENT_ADDRESS}`)
+      console.log(`[v0] Attempting to send ${amount} ETH from ${walletAddress} to ${RECIPIENT_ADDRESS}`)
 
       const txHash = await sdk.wallet.ethProvider.request({
         method: "eth_sendTransaction",
@@ -70,11 +70,6 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
               className="bg-background text-foreground"
             />
           </div>
-          {amount && (
-            <p className="text-xs text-muted-foreground">
-              To: {RECIPIENT_ADDRESS.slice(0, 6)}...{RECIPIENT_ADDRESS.slice(-4)}
-            </p>
-          )}
           <Button
             onClick={handleSend}
             disabled={!amount || isLoading}

@@ -20,14 +20,14 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
 
     setIsLoading(true)
     try {
-      console.log("[v0] Sending feedback to dim39:", feedback)
+      console.log("[v0] Sending feedback to @partakon:", feedback)
 
       const response = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: feedback,
-          targetUsername: "dim39",
+          targetUsername: "@partakon",
         }),
       })
 
