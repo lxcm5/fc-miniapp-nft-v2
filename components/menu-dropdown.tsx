@@ -26,19 +26,19 @@ export function MenuDropdown() {
   }
 
   const handleDonate = async () => {
-    if (!sdk?.actions?.sendToken || !walletAddress) {
-      console.log("[donate] SDK or wallet not available")
+    if (!sdk?.actions?.sendToken) {
+      console.log("[donate] SDK not available")
       return
     }
 
     try {
-      const RECIPIENT_ADDRESS = "0xdBB9f76DC289B4cec58BCfe10923084F96Fa6Aee"
+      const RECIPIENT_FID = 3939 // lxc5m's FID
+      const BASE_ETH = "eip155:8453/slip44:60" // ETH on Base (CAIP-19)
 
       await sdk.actions.sendToken({
-        recipientAddress: RECIPIENT_ADDRESS,
-        amount: "", // User will input amount in the dialog
-        symbol: "ETH",
-        chainId: 8453, // Base
+        recipientFid: RECIPIENT_FID,
+        token: BASE_ETH,
+        // amount not required - user will input in dialog
       })
     } catch (error) {
       console.log("[donate] Error opening sendToken dialog:", error)
