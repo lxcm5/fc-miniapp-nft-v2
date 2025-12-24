@@ -37,33 +37,20 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
   const RECIPIENT_ADDRESS = "0xdBB9f76DC289B4cec58BCfe10923084F96Fa6Aee"
 
   const handleSend = async () => {
-    if (!amount || !walletAddress || !sdk) {
+    if (!amount || !sdk?.actions?.sendToken) {
       return
     }
 
     setIsLoading(true)
     setIsSuccess(false)
     try {
-      const amountInWei = BigInt(Math.floor(Number(amount) * 1e18))
-      const hexValue = "0x" + amountInWei.toString(16)
-      const hexGas = "0x5208"
-
-      console.log(`[v0] Attempting to send ${amount} ETH from ${walletAddress}`)
-      console.log("[v0] Amount in wei (hex):", hexValue)
-
-      const txHash = await sdk.wallet.ethProvider.request({
-        method: "eth_sendTransaction",
-        params: [
-          {
-            from: walletAddress,
-            to: RECIPIENT_ADDRESS,
-            value: hexValue,
-            gas: hexGas,
-          },
-        ],
+      await sdk.actions.sendToken({
+        recipientAddress: RECIPIENT_ADDRESS,
+        amount: amount,
+        symbol: "ETH",
+        chainId: 8453,
       })
 
-      console.log("[v0] Transaction sent:", txHash)
       setIsSuccess(true)
       setAmount("")
 
@@ -107,7 +94,7 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
           )}
           <Button
             onClick={handleSend}
-            disabled={!amount || isLoading || !walletAddress}
+            disabled={!amount || isLoading}
             className="w-full bg-primary hover:bg-primary/90"
           >
             {isSuccess ? "Thanks 🙏🏻" : isLoading ? "Sending..." : "Send"}
