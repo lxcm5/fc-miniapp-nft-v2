@@ -86,11 +86,11 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Donate</DialogTitle>
+          <DialogTitle>Donate for coffe & pizza</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Amount (ETH)</label>
+            <label className="text-sm font-medium text-foreground mb-3 block">Amount ETH in Base</label>
             <div className="flex items-center gap-2">
               <Input
                 type="number"
