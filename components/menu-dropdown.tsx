@@ -11,7 +11,7 @@ import { useFarcaster } from "@/app/providers"
 export function MenuDropdown() {
   const [aboutOpen, setAboutOpen] = useState(false)
   const [whatsNewOpen, setWhatsNewOpen] = useState(false)
-  const { sdk, walletAddress } = useFarcaster()
+  const { sdk, isInFarcaster } = useFarcaster()
 
   const handleCastFeedback = async () => {
     if (!sdk) return
@@ -26,26 +26,17 @@ export function MenuDropdown() {
   }
 
   const handleDonate = async () => {
-    console.log("[v0] handleDonate called")
-
-    if (!sdk?.actions?.sendToken) {
-      console.log("[v0] sendToken not available")
+    if (!isInFarcaster) {
+      alert("Open this app in Warpcast to donate.")
       return
     }
 
-    const RECIPIENT_ADDRESS = "0xdBB9f76DC289B4cec58BCfe10923084F96Fa6Aee"
-    const BASE_ETH = "eip155:8453/slip44:60" // ETH on Base
-
     const res = await sdk.actions.sendToken({
-      recipientAddress: RECIPIENT_ADDRESS,
-      token: BASE_ETH,
+      recipientAddress: "0xdBB9f76DC289B4cec58BCfe10923084F96Fa6Aee",
+      token: "eip155:8453/slip44:60",
     })
 
-    if (!res?.success) {
-      console.log("[v0] sendToken failed:", res?.reason, res?.error)
-    } else {
-      console.log("[v0] sendToken success, tx:", res.send?.transaction)
-    }
+    console.log("[v0] sendToken:", res)
   }
 
   return (
