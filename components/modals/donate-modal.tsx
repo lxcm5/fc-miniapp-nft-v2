@@ -35,6 +35,7 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
   }, [open])
 
   const RECIPIENT_ADDRESS = "0xdBB9f76DC289B4cec58BCfe10923084F96Fa6Aee"
+  const BASE_ETH_CAIP19 = "eip155:8453/slip44:60"
 
   const handleSend = async () => {
     if (!amount || !sdk?.actions?.sendToken) {
@@ -44,11 +45,12 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
     setIsLoading(true)
     setIsSuccess(false)
     try {
+      const wei = BigInt(Math.floor(Number(amount) * 1e18)).toString()
+
       await sdk.actions.sendToken({
+        token: BASE_ETH_CAIP19,
         recipientAddress: RECIPIENT_ADDRESS,
-        amount: amount,
-        symbol: "ETH",
-        chainId: 8453,
+        amount: wei,
       })
 
       setIsSuccess(true)
