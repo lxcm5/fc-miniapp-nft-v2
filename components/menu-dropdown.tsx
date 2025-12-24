@@ -51,13 +51,19 @@ export function MenuDropdown() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48 py-2">
-          <DropdownMenuItem onClick={() => setAboutOpen(true)} className="py-2.5 cursor-pointer hover:bg-muted">
+          <DropdownMenuItem onSelect={() => setAboutOpen(true)} className="py-2.5 cursor-pointer hover:bg-muted">
             About
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleCastFeedback} className="py-2.5 cursor-pointer hover:bg-muted">
+          <DropdownMenuItem onSelect={handleCastFeedback} className="py-2.5 cursor-pointer hover:bg-muted">
             Cast Feedback
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleDonate} className="py-2.5 cursor-pointer hover:bg-muted">
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault()
+              handleDonate()
+            }}
+            className="py-2.5 cursor-pointer hover:bg-muted"
+          >
             Donate
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -66,9 +72,9 @@ export function MenuDropdown() {
       <AboutModal
         open={aboutOpen}
         onOpenChange={setAboutOpen}
-        onDonateClick={() => {
+        onDonateClick={async () => {
+          await handleDonate()
           setAboutOpen(false)
-          handleDonate()
         }}
         onWhatsNewClick={() => {
           setAboutOpen(false)
