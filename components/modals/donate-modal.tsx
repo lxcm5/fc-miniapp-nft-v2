@@ -38,7 +38,13 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
   const BASE_ETH_CAIP19 = "eip155:8453/slip44:60"
 
   const handleSend = async () => {
+    console.log("[v0] Donate - handleSend called")
+    console.log("[v0] Amount:", amount)
+    console.log("[v0] SDK actions available:", !!sdk?.actions)
+    console.log("[v0] SendToken available:", !!sdk?.actions?.sendToken)
+
     if (!amount || !sdk?.actions?.sendToken) {
+      console.log("[v0] Missing amount or sendToken method")
       return
     }
 
@@ -47,12 +53,19 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
     try {
       const wei = BigInt(Math.floor(Number(amount) * 1e18)).toString()
 
+      console.log("[v0] Sending token:", {
+        token: BASE_ETH_CAIP19,
+        recipientAddress: RECIPIENT_ADDRESS,
+        amount: wei,
+      })
+
       await sdk.actions.sendToken({
         token: BASE_ETH_CAIP19,
         recipientAddress: RECIPIENT_ADDRESS,
         amount: wei,
       })
 
+      console.log("[v0] Token send successful")
       setIsSuccess(true)
       setAmount("")
 
@@ -62,6 +75,7 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
         setIsSuccess(false)
       }, 2000)
     } catch (error) {
+      console.log("[v0] Error sending token:", error)
       setIsLoading(false)
       onOpenChange(false)
     }
