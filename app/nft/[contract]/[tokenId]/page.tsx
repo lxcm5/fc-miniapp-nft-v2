@@ -151,18 +151,15 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                   <span className="text-sm text-muted-foreground">Collection Floor</span>
                   <div className="text-right">
                     <div className="text-sm font-medium text-foreground">
-                      {formattedFloor ? `${Number(formattedFloor).toFixed(5)} ETH` : "—"}
+                      {formattedFloor
+                        ? `${Number(formattedFloor).toFixed(5)} ETH ≈ $${(Number(formattedFloor) * ethPrice).toFixed(2)}`
+                        : "—"}
                     </div>
-                    {formattedFloor && (
-                      <div className="text-xs text-muted-foreground">
-                        ${(Number(formattedFloor) * ethPrice).toFixed(2)}
-                      </div>
-                    )}
                   </div>
                 </div>
 
                 <div className="border-t border-border pt-3">
-                  <p className="text-sm text-muted-foreground mb-2">Floor Price History</p>
+                  <p className="text-sm text-muted-foreground mb-2">Floor Price History (under construction)</p>
                   <div
                     className="h-32 bg-muted rounded p-2 relative"
                     style={{
