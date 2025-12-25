@@ -151,11 +151,11 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                   <span className="text-sm text-muted-foreground">Collection Floor</span>
                   <div className="text-right">
                     <div className="text-sm font-medium text-foreground">
-                      {formattedFloor ? `${formattedFloor} ETH` : "—"}
+                      {formattedFloor ? `${Number(formattedFloor).toFixed(5)} ETH` : "—"}
                     </div>
                     {formattedFloor && (
                       <div className="text-xs text-muted-foreground">
-                        ${(Number(formattedFloor) * ethPrice).toFixed(4)}
+                        ${(Number(formattedFloor) * ethPrice).toFixed(2)}
                       </div>
                     )}
                   </div>
@@ -163,7 +163,14 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
 
                 <div className="border-t border-border pt-3">
                   <p className="text-sm text-muted-foreground mb-2">Floor Price History</p>
-                  <div className="h-64 bg-muted rounded p-2">
+                  <div
+                    className="h-64 bg-muted rounded p-2 relative"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(90deg, #e5e7eb 1px, transparent 1px), linear-gradient(#e5e7eb 1px, transparent 1px)",
+                      backgroundSize: "10px 10px",
+                    }}
+                  >
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={floorPriceHistory} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                         <XAxis dataKey="date" hide />
