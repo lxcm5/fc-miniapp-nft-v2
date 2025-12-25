@@ -155,7 +155,7 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                     </div>
                     {formattedFloor && (
                       <div className="text-xs text-muted-foreground">
-                        ${(Number(formattedFloor) * ethPrice).toFixed(2)}
+                        ${(Number(formattedFloor) * ethPrice).toFixed(5)}
                       </div>
                     )}
                   </div>
@@ -163,9 +163,9 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
 
                 <div className="border-t border-border pt-3">
                   <p className="text-sm text-muted-foreground mb-2">Floor Price History</p>
-                  <div className="h-40 bg-muted rounded p-2">
+                  <div className="h-64 bg-muted rounded p-2">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={floorPriceHistory}>
+                      <LineChart data={floorPriceHistory} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                         <XAxis dataKey="date" hide />
                         <YAxis domain={[0, 1]} hide />
                         <Tooltip
@@ -184,6 +184,7 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                           stroke="hsl(var(--primary))"
                           strokeWidth={2}
                           dot={false}
+                          fill="none"
                         />
                       </LineChart>
                     </ResponsiveContainer>
