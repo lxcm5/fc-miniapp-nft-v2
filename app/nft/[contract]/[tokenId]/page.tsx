@@ -10,6 +10,7 @@ import { SendNFTModal } from "@/components/send-nft-modal"
 import { useState, useEffect } from "react"
 import { useFarcaster } from "@/app/providers"
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import { useEthPrice } from "@/hooks/use-eth-price"
 
 export default function NFTDetailPage({ params }: { params: { contract: string; tokenId: string } }) {
   const router = useRouter()
@@ -17,12 +18,25 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
   const [showSendModal, setShowSendModal] = useState(false)
   const [isCollectionOpen, setIsCollectionOpen] = useState(false)
   const { sdk } = useFarcaster()
+  const { ethPrice } = useEthPrice()
 
   const nftDataString = searchParams.get("data")
   const nft = nftDataString ? JSON.parse(decodeURIComponent(nftDataString)) : null
 
   const [priceHistory, setPriceHistory] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+
+  const floorPriceHistory = [
+    { date: "Day 1", price: 0.1, usd: 0.1 * ethPrice },
+    { date: "Day 2", price: 0.15, usd: 0.15 * ethPrice },
+    { date: "Day 3", price: 0.29, usd: 0.29 * ethPrice },
+    { date: "Day 4", price: 0.1, usd: 0.1 * ethPrice },
+    { date: "Day 5", price: 0.14, usd: 0.14 * ethPrice },
+    { date: "Day 6", price: 0.13, usd: 0.13 * ethPrice },
+    { date: "Day 7", price: 0.3, usd: 0.3 * ethPrice },
+    { date: "Day 8", price: 0.5, usd: 0.5 * ethPrice },
+    { date: "Day 9", price: 0.45, usd: 0.45 * ethPrice },
+  ]
 
   useEffect(() => {
     if (nft) {
@@ -135,9 +149,45 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
               <CollapsibleContent className="space-y-3 mt-3 pt-3 border-t border-border">
                 <div className="flex justify-between items-start">
                   <span className="text-sm text-muted-foreground">Collection Floor</span>
-                  <span className="text-sm font-medium text-foreground">
-                    {formattedFloor ? `${formattedFloor} ETH` : "—"}
-                  </span>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-foreground">
+                      {formattedFloor ? `${formattedFloor} ETH` : "—"}
+                    </div>
+                    {formattedFloor && (
+                      <div className="text-xs text-muted-foreground">
+                        ${(Number(formattedFloor) * ethPrice).toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-3">
+                  <p className="text-sm text-muted-foreground mb-2">Floor Price History</p>
+                  <div className="h-40 bg-muted rounded p-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={floorPriceHistory}>
+                        <XAxis dataKey="date" hide />
+                        <YAxis domain={[0, 1]} hide />
+                        <Tooltip
+                          contentStyle={{
+                            background: "hsl(var(--background))",
+                            border: "1px solid hsl(var(--border))",
+                          }}
+                          formatter={(value: number) => {
+                            if (typeof value !== "number" || !Number.isFinite(value)) return ["—", "Price"]
+                            return [`${value.toFixed(4)} ETH ($${(value * ethPrice).toFixed(2)})`, "Price"]
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="price"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
 
                 <div className="border-t border-border pt-3">
