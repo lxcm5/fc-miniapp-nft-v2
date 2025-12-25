@@ -164,7 +164,7 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                 <div className="border-t border-border pt-3">
                   <p className="text-sm text-muted-foreground mb-2">Floor Price History</p>
                   <div
-                    className="h-64 bg-muted rounded p-2 relative"
+                    className="h-32 bg-muted rounded p-2 relative"
                     style={{
                       backgroundImage:
                         "linear-gradient(90deg, #e5e7eb 1px, transparent 1px), linear-gradient(#e5e7eb 1px, transparent 1px)",
@@ -196,45 +196,6 @@ export default function NFTDetailPage({ params }: { params: { contract: string; 
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-                </div>
-
-                <div className="border-t border-border pt-3">
-                  <p className="text-sm text-muted-foreground mb-2">Price History</p>
-                  {loadingHistory ? (
-                    <div className="h-32 bg-muted rounded flex items-center justify-center">
-                      <span className="text-xs text-muted-foreground">Loading...</span>
-                    </div>
-                  ) : priceHistory.length > 0 ? (
-                    <div className="h-32 bg-muted rounded p-2">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={priceHistory}>
-                          <XAxis dataKey="date" hide />
-                          <YAxis hide />
-                          <Tooltip
-                            contentStyle={{
-                              background: "hsl(var(--background))",
-                              border: "1px solid hsl(var(--border))",
-                            }}
-                            formatter={(value: number) => {
-                              if (typeof value !== "number" || !Number.isFinite(value)) return ["—", "Price"]
-                              return [`${value.toFixed(4)} ETH`, "Price"]
-                            }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="price"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth={2}
-                            dot={false}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="h-32 bg-muted rounded flex items-center justify-center">
-                      <span className="text-xs text-muted-foreground">No sales history available</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="border-t border-border pt-3">
