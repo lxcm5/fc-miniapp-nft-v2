@@ -2,7 +2,7 @@
   "accountAssociation": {
     "header": "eyJmaWQiOjQ3ODY1MSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweGRCQjlmNzZEQzI4OUI0Y2VjNThCQ2ZlMTA5MjMwODRGOTZGYTZBZWUifQ",
     "payload": "eyJkb21haW4iOiJtaW5pYXBwLW5mdC12Mi52ZXJjZWwuYXBwIn0",
-    "signature": "lu58Wq6fQpv9Dm7DycaUtfAI2Hdvf11+RCZ+uec61VxrQLGOUHC2SZzQP2Ja4u/3EgBiJqY7fZJWRVTWmUukKhw="
+    "signature": "0SSIe2SlOFP7lgj33ht2QLaKMBLztl2oZfYG83jkgzpBKxqS/WwrUYCANuCY3g/6Bzqi3snpOrud4Sx0N8VSHhs="
   },
   "baseBuilder": {
     "ownerAddress": "0xB541481b59D97f8789998C688E640855Fe754648"
@@ -10,12 +10,12 @@
   "miniapp": {
     "name": "NFT aWallet",
     "version": "1",
-    "iconUrl": "https://miniapp-nft-v2.vercel.app/icon.png",
-    "homeUrl": "https://miniapp-nft-v2.vercel.app",
-    "imageUrl": "https://miniapp-nft-v2.vercel.app/image.png",
-    "splashImageUrl": "https://miniapp-nft-v2.vercel.app/splash.png",
+    "iconUrl": "https://nft-awallet.vercel.app/icon.png",
+    "homeUrl": "https://nft-awallet.vercel.app",
+    "imageUrl": "https://nft-awallet.vercel.app/image.png",
+    "splashImageUrl": "https://nft-awallet.vercel.app/splash.png",
     "splashBackgroundColor": "#ffffff",
-    "webhookUrl": "https://miniapp-nft-v2.vercel.app/api/webhook",
+    "webhookUrl": "https://nft-awallet.vercel.app/api/webhook",
     "subtitle": "Advanced NFT wallet",
     "description": "Wallet for Farcaster — view your NFTs, explore collections, and manage assets.",
     "primaryCategory": "utility",
@@ -27,12 +27,12 @@
 
     "tags": ["nft", "wallet"],
 
-    "heroImageUrl": "https://miniapp-nft-v2.vercel.app/hero.png",
-    "ogImageUrl": "https://miniapp-nft-v2.vercel.app/og.png",
+    "heroImageUrl": "https://nft-awallet.vercel.app/hero.png",
+    "ogImageUrl": "https://nft-awallet.vercel.app/og.png",
     "screenshotUrls": [
-      "https://miniapp-nft-v2.vercel.app/screens/screen1.png",
-      "https://miniapp-nft-v2.vercel.app/screens/screen2.png",
-      "https://miniapp-nft-v2.vercel.app/screens/screen3.png"
+      "https://nft-awallet.vercel.app/screens/screen1.png",
+      "https://nft-awallet.vercel.app/screens/screen2.png",
+      "https://nft-awallet.vercel.app/screens/screen3.png"
     ],
 
     "noindex": false
