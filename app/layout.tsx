@@ -30,19 +30,33 @@ export const metadata: Metadata = {
   description: "View your ETH balance and NFT collection",
   manifest: "/manifest.json",
   icons: {
-    icon: [{ url: "/icon.png" }],
+    icon: [
+      {
+        url: "/icon.png",
+      },
+    ],
   },
   openGraph: {
     title: "Farcaster NFT Wallet",
     description: "View your NFTs",
     images: [`${APP_URL}/embed.png`],
   },
+
+  // ✅ App Router: add custom meta tags here
   other: {
+    // Base ownership verification
+    "base:app_id": "6968c5f04991800a6d9d649d",
+
+    // Farcaster mini app embed
     "fc:miniapp": JSON.stringify(miniAppEmbed),
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
       <body className="font-sans antialiased">
