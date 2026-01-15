@@ -44,12 +44,22 @@ export const metadata: Metadata = {
   other: {
     "fc:miniapp": JSON.stringify(miniAppEmbed),
   },
-    generator: 'v0.app'
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
+      <head>
+        {/* Base / Farcaster ownership verification */}
+        <meta
+          name="base:app_id"
+          content="6968c5f04991800a6d9d649d"
+        />
+      </head>
       <body className="font-sans antialiased">
         <FarcasterProvider>{children}</FarcasterProvider>
         <Analytics />
