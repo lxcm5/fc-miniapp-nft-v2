@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { FarcasterProvider } from "./providers"
 import "./globals.css"
+import { Metadata } from 'next';
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -26,6 +27,16 @@ const miniAppEmbed = {
 }
 
 export const metadata: Metadata = {
+  other: {
+    'base:app_id': '6968c5f04991800a6d9d649d',
+  },
+};
+
+export default function Home() {
+  return <div>{/* Your page content */}</div>;
+}
+
+export const metadata: Metadata = {
   title: "Farcaster NFT Wallet",
   description: "View your ETH balance and NFT collection",
   manifest: "/manifest.json",
@@ -41,22 +52,13 @@ export const metadata: Metadata = {
     description: "View your NFTs",
     images: [`${APP_URL}/embed.png`],
   },
-
-  // ✅ App Router: add custom meta tags here
   other: {
-    // Base ownership verification
-    "base:app_id": "6968c5f04991800a6d9d649d",
-
-    // Farcaster mini app embed
     "fc:miniapp": JSON.stringify(miniAppEmbed),
   },
+    generator: 'v0.app'
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="font-sans antialiased">
