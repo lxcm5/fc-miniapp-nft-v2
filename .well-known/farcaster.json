@@ -27,7 +27,7 @@
 
     "tags": ["nft", "wallet"],
 
-    "heroImageUrl": "https://nft-awallet.vercel.app/hero.png",
+    "heroImageUrl": "https://nft-awallet.vercel.app/og.png",
     "ogImageUrl": "https://nft-awallet.vercel.app/og.png",
     "screenshotUrls": [
       "https://nft-awallet.vercel.app/screens/screen1.png",
