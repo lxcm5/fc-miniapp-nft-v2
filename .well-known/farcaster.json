@@ -12,7 +12,7 @@
     "version": "1",
     "iconUrl": "https://nft-awallet.vercel.app/icon.png",
     "homeUrl": "https://nft-awallet.vercel.app",
-    "imageUrl": "https://nft-awallet.vercel.app/image.png",
+    "imageUrl": "https://nft-awallet.vercel.app/og.png",
     "splashImageUrl": "https://nft-awallet.vercel.app/splash.png",
     "splashBackgroundColor": "#ffffff",
     "webhookUrl": "https://nft-awallet.vercel.app/api/webhook",
