@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Farcaster NFT Wallet",
     description: "View your NFTs",
-    images: [`${APP_URL}/embed.png`],
+    images: [`${APP_URL}/embed2.png`],
   },
   other: {
     "fc:miniapp": JSON.stringify(miniAppEmbed),
