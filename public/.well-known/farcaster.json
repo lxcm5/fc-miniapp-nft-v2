@@ -16,10 +16,10 @@
     "splashImageUrl": "https://nft-awallet.vercel.app/splash.png",
     "splashBackgroundColor": "#ffffff",
     "webhookUrl": "https://nft-awallet.vercel.app/api/webhook",
-    "subtitle": "Advanced NFT wallet",
-    "description": "Wallet for Farcaster — view your NFTs, explore collections, and manage assets.",
+    "subtitle": "Advanced NFT Wallet",
+    "description": "NFT Wallet — view your NFTs, explore collections, and manage assets.",
     "primaryCategory": "utility",
-    "tagline": "Manage your NFTs",
+    "tagline": "Manage NFTs",
     "buttonTitle": "Open Mini App",
 
     "ogTitle": "NFT aWallet",
