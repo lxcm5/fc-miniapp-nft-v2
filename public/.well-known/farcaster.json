@@ -12,23 +12,23 @@
     "version": "1",
     "iconUrl": "https://nft-awallet.vercel.app/icon.png",
     "homeUrl": "https://nft-awallet.vercel.app",
-    "imageUrl": "https://nft-awallet.vercel.app/og.png",
+    "imageUrl": "https://nft-awallet.vercel.app/embed3.png",
     "splashImageUrl": "https://nft-awallet.vercel.app/splash.png",
     "splashBackgroundColor": "#ffffff",
     "webhookUrl": "https://nft-awallet.vercel.app/api/webhook",
     "subtitle": "Advanced NFT wallet",
     "description": "Wallet for Farcaster — view your NFTs, explore collections, and manage assets.",
     "primaryCategory": "utility",
-    "tagline": "Manage NFTs in Farcaster",
+    "tagline": "Manage your NFTs",
     "buttonTitle": "Open Mini App",
 
-    "ogTitle": "Farcaster NFT aWallet",
+    "ogTitle": "NFT aWallet",
     "ogDescription": "Manage NFTs and assets in real-time",
 
     "tags": ["nft", "wallet"],
 
-    "heroImageUrl": "https://nft-awallet.vercel.app/og.png",
-    "ogImageUrl": "https://nft-awallet.vercel.app/og.png",
+    "heroImageUrl": "https://nft-awallet.vercel.app/embed3.png",
+    "ogImageUrl": "https://nft-awallet.vercel.app/embed3.png",
     "screenshotUrls": [
       "https://nft-awallet.vercel.app/screens/screen1.png",
       "https://nft-awallet.vercel.app/screens/screen2.png",
