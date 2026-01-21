@@ -12,7 +12,7 @@ const APP_URL = "https://nft-awallet.vercel.app"
 
 const miniAppEmbed = {
   version: "1",
-  imageUrl: `${APP_URL}/embed2.png`,
+  imageUrl: `${APP_URL}/embed3.png`,
   button: {
     title: "Open Wallet",
     action: {
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "NFT aWallet",
     description: "View your NFTs",
-    images: [`${APP_URL}/embed2.png`],
+    images: [`${APP_URL}/embed3.png`],
   },
   other: {
     "fc:miniapp": JSON.stringify(miniAppEmbed),
