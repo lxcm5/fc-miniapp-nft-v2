@@ -13,6 +13,7 @@ interface NFT {
   image: string
   tokenId: string
   contractAddress: string
+  tokenType?: string
   floorPrice?: string
   description?: string
   traits?: Array<{ trait_type: string; value: string; trait_count: number }>
@@ -103,6 +104,7 @@ export function NFTGrid({
                 "/digital-art-collection.png",
               tokenId: nft.tokenId,
               contractAddress: nft.contract.address,
+              tokenType: nft.contract.tokenType,
               floorPrice: nft.contract.openSeaMetadata?.floorPrice?.toString() || "—",
               description: nft.raw?.metadata?.description || nft.description,
               traits:
