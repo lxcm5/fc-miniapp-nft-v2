@@ -200,11 +200,26 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
           tokenIdHex = "0x" + BigInt(rawTokenId).toString(16)
         }
 
-        const functionSelector = "0x42842e0e"
         const fromPadded = walletAddress.slice(2).padStart(64, "0")
         const toPadded = normalizedRecipient.slice(2).padStart(64, "0")
         const tokenIdPadded = tokenIdHex.slice(2).padStart(64, "0")
-        const encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded
+
+        const tokenType = nft.tokenType || nft.contract?.tokenType || ""
+        const isERC1155 = tokenType.toUpperCase() === "ERC1155"
+
+        let encodedData: string
+        if (isERC1155) {
+          // ERC-1155 safeTransferFrom(address,address,uint256,uint256,bytes)
+          const functionSelector = "0xf242432a"
+          const amountPadded = "1".padStart(64, "0")
+          const dataOffsetPadded = "a0".padStart(64, "0") // 160 bytes offset to `bytes data`
+          const dataLengthPadded = "0".padStart(64, "0")  // empty bytes
+          encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded + amountPadded + dataOffsetPadded + dataLengthPadded
+        } else {
+          // ERC-721 safeTransferFrom(address,address,uint256)
+          const functionSelector = "0x42842e0e"
+          encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded
+        }
 
         const txParams = {
           from: walletAddress,
