@@ -39,6 +39,24 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
+
+    console.log("[v0] Neynar raw response keys:", Object.keys(data))
+    console.log("[v0] Neynar raw response:", JSON.stringify(data).slice(0, 500))
+
+    // Normalize response for ?q= search:
+    // Neynar v2 may return { users: [...] } without the "result" wrapper,
+    // but the client expects { result: { users: [...] } }
+    if (query && !address) {
+      if (data.users && !data.result) {
+        console.log("[v0] Wrapping Neynar response in { result: { users } } format")
+        const normalized = { result: { users: data.users } }
+        console.log("[v0] Proxy returning normalized:", JSON.stringify(normalized).slice(0, 500))
+        return NextResponse.json(normalized)
+      }
+      console.log("[v0] Neynar response already has result.users, passing through")
+    }
+
+    console.log("[v0] Proxy returning data as-is")
     return NextResponse.json(data)
   } catch (error) {
     console.error("[v0] Error fetching Neynar data:", error)
