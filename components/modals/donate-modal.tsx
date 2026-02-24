@@ -8,6 +8,7 @@ import { useFarcaster } from "@/app/providers"
 import { useEthPrice } from "@/hooks/use-eth-price"
 import { useSendTransaction } from "wagmi"
 import { parseEther } from "viem"
+import { DATA_SUFFIX } from "@/lib/builder-code"
 
 interface DonateModalProps {
   open: boolean
@@ -54,6 +55,7 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
       const txHash = await sendTransactionAsync({
         to: RECIPIENT_ADDRESS as `0x${string}`,
         value: parseEther(amount),
+        dataSuffix: DATA_SUFFIX,
       })
 
       console.log("[v0] Transaction sent:", txHash)

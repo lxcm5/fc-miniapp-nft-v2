@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { useState, useEffect } from "react"
 import { useFarcaster } from "@/app/providers"
 import { useAccount, useWriteContract } from "wagmi"
+import { DATA_SUFFIX } from "@/lib/builder-code"
 
 const erc721Abi = [
   {
@@ -59,6 +60,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
   const [searchResults, setSearchResults] = useState<FarcasterUser[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const [recentRecipients, setRecentRecipients] = useState<FarcasterUser[]>([])
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false)
   const { walletAddress } = useFarcaster()
@@ -200,6 +202,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
   const handleSend = async () => {
     setIsSending(true)
+    setSendError(null)
 
     try {
       if (!fromAddress) {
@@ -237,6 +240,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
               1n,
               "0x" as `0x${string}`,
             ],
+            dataSuffix: DATA_SUFFIX,
           })
           console.log("[v0] ERC-1155 transfer tx:", txHash)
         } else {
@@ -250,6 +254,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
               normalizedRecipient as `0x${string}`,
               tokenId,
             ],
+            dataSuffix: DATA_SUFFIX,
           })
           console.log("[v0] ERC-721 transfer tx:", txHash)
         }
@@ -260,7 +265,14 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       setStep("success")
     } catch (error: any) {
       console.error("Error sending NFT:", error)
-      alert(`Error sending NFT: ${error?.message || "Unknown error"}`)
+      const message = error?.message || ""
+      if (message.includes("execution reverted") || message.includes("revert")) {
+        setSendError("Этот NFT нельзя передавать (soulbound/non-transferable)")
+      } else if (message.includes("insufficient funds")) {
+        setSendError("Недостаточно ETH для оплаты газа")
+      } else {
+        setSendError(message || "Unknown error")
+      }
     } finally {
       setIsSending(false)
     }
@@ -274,6 +286,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       setSelectedUser(null)
       setSearchResults([])
       setIsAddressConfirmed(false)
+      setSendError(null)
     }, 300)
   }
 
@@ -483,13 +496,16 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" onClick={() => setStep("recipient")} disabled={isSending}>
+                <Button variant="outline" onClick={() => { setSendError(null); setStep("recipient") }} disabled={isSending}>
                   Back
                 </Button>
                 <Button onClick={handleSend} className="bg-primary" disabled={isSending || !isAddressConfirmed}>
                   {isSending ? "Sending..." : "Send"}
                 </Button>
               </div>
+              {sendError && (
+                <p className="text-sm text-red-500 mt-2">{sendError}</p>
+              )}
             </div>
           </>
         ) : (
