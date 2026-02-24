@@ -167,110 +167,65 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
   const handleSend = async () => {
     setIsSending(true)
-    console.log("[v0] handleSend called, nftData:", nftData)
 
     try {
       const provider = farcasterSdk.wallet.ethProvider
-      console.log("[v0] Provider:", provider)
 
       if (!provider) {
         throw new Error("Ethereum provider not available. Please open this app in Warpcast.")
       }
 
       const normalizedRecipient = recipient.toLowerCase()
-      console.log("[v0] Recipient:", normalizedRecipient)
 
       if (!normalizedRecipient.startsWith("0x")) {
         throw new Error("Invalid recipient address")
       }
 
-      // Get actual user account from provider
-      console.log("[v0] Getting accounts...")
-      const accounts = (await provider.request({
-        method: "eth_accounts",
-        params: [],
-      })) as string[]
-      console.log("[v0] Accounts:", accounts)
-
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No accounts available. Please connect your wallet.")
+      if (!walletAddress) {
+        throw new Error("Wallet not connected")
       }
 
-      const userAddress = accounts[0].toLowerCase()
-      console.log("[v0] Sending from account:", userAddress)
+      for (const nft of nftData || []) {
+        const contractAddress = nft.contractAddress || nft.contract?.address || nft.contract_address
+        const rawTokenId = nft.tokenId || nft.token_id || nft.id?.tokenId
 
-      const successfulNfts: string[] = []
-      const failedNfts: Array<{ index: number; error: string }> = []
+        if (!contractAddress || !rawTokenId) {
+          throw new Error("Missing contract address or token ID")
+        }
 
-      for (let i = 0; i < (nftData?.length || 0); i++) {
-        const nft = nftData![i]
-        try {
-          const contractAddress = nft.contractAddress || nft.contract?.address || nft.contract_address
-          const rawTokenId = nft.tokenId || nft.token_id || nft.id?.tokenId
+        let tokenIdHex: string
+        if (typeof rawTokenId === "string" && rawTokenId.startsWith("0x")) {
+          tokenIdHex = rawTokenId
+        } else {
+          tokenIdHex = "0x" + BigInt(rawTokenId).toString(16)
+        }
 
-          if (!contractAddress || !rawTokenId) {
-            throw new Error("Missing contract address or token ID")
-          }
+        const functionSelector = "0x42842e0e"
+        const fromPadded = walletAddress.slice(2).padStart(64, "0")
+        const toPadded = normalizedRecipient.slice(2).padStart(64, "0")
+        const tokenIdPadded = tokenIdHex.slice(2).padStart(64, "0")
+        const encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded
 
-          let tokenIdHex: string
-          if (typeof rawTokenId === "string" && rawTokenId.startsWith("0x")) {
-            tokenIdHex = rawTokenId
-          } else {
-            tokenIdHex = "0x" + BigInt(rawTokenId).toString(16)
-          }
+        const txParams = {
+          from: walletAddress,
+          to: contractAddress,
+          data: encodedData,
+          value: "0x0",
+        }
 
-          console.log(`[v0] NFT ${i + 1}/${nftData?.length}: Contract=${contractAddress}, TokenId=${tokenIdHex}`)
+        const txHash = await provider.request({
+          method: "eth_sendTransaction",
+          params: [txParams],
+        })
 
-          const functionSelector = "0x42842e0e"
-          const fromPadded = userAddress.slice(2).padStart(64, "0")
-          const toPadded = normalizedRecipient.slice(2).padStart(64, "0")
-          const tokenIdPadded = tokenIdHex.slice(2).padStart(64, "0")
-          // safeTransferFrom requires 4 parameters: from, to, tokenId, data
-          const dataOffsetPadded = "0000000000000000000000000000000000000000000000000000000000000080"
-          const dataLength = "0000000000000000000000000000000000000000000000000000000000000000"
-          const encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded + dataOffsetPadded + dataLength
-
-          const txParams = {
-            from: userAddress,
-            to: contractAddress,
-            data: encodedData,
-            value: "0x0",
-          }
-
-          console.log(`[v0] NFT ${i + 1}: Sending transaction...`)
-
-          const txHash = await provider.request({
-            method: "eth_sendTransaction",
-            params: [txParams],
-          })
-
-          if (!txHash) {
-            throw new Error("No transaction hash returned")
-          }
-
-          console.log(`[v0] NFT ${i + 1}: Success! TxHash=${txHash}`)
-          successfulNfts.push(`${contractAddress}_${tokenIdHex}`)
-        } catch (error: any) {
-          console.error(`[v0] NFT ${i + 1}: Failed -`, error?.message)
-          failedNfts.push({
-            index: i + 1,
-            error: error?.message || "Unknown error",
-          })
+        if (!txHash) {
+          throw new Error("Transaction failed - no hash returned")
         }
       }
 
       saveRecentRecipient(recipient, selectedUser || undefined)
 
-      if (failedNfts.length === 0) {
-        setStep("success")
-      } else if (successfulNfts.length > 0) {
-        alert(
-          `${successfulNfts.length} NFT(s) sent successfully, but ${failedNfts.length} failed:\n${failedNfts.map((f) => `NFT #${f.index}: ${f.error}`).join("\n")}`,
-        )
-        setStep("success")
-      } else {
-        throw new Error(`All NFTs failed to send: ${failedNfts.map((f) => f.error).join(", ")}`)
-      }
+      setStep("success")
     } catch (error: any) {
       console.error("Error sending NFT:", error)
       alert(`Error sending NFT: ${error?.message || "Unknown error"}`)
