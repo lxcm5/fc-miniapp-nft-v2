@@ -100,13 +100,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
         try {
           const response = await fetch(
-            `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${recipient}`,
-            {
-              headers: {
-                accept: "application/json",
-                api_key: "NEYNAR_API_DOCS",
-              },
-            },
+            `/api/farcaster-search?address=${encodeURIComponent(recipient)}`,
           )
 
           const data = await response.json()
@@ -144,13 +138,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
       try {
         const response = await fetch(
-          `https://api.neynar.com/v2/farcaster/user/search?q=${encodeURIComponent(recipient)}&limit=5`,
-          {
-            headers: {
-              accept: "application/json",
-              api_key: "NEYNAR_API_DOCS",
-            },
-          },
+          `/api/farcaster-search?q=${encodeURIComponent(recipient)}`,
         )
 
         const data = await response.json()
