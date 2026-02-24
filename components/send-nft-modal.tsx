@@ -5,7 +5,37 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState, useEffect } from "react"
 import { useFarcaster } from "@/app/providers"
-import farcasterSdk from "@farcaster/miniapp-sdk"
+import { useAccount, useWriteContract } from "wagmi"
+
+const erc721Abi = [
+  {
+    name: "safeTransferFrom",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "tokenId", type: "uint256" },
+    ],
+    outputs: [],
+  },
+] as const
+
+const erc1155Abi = [
+  {
+    name: "safeTransferFrom",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "id", type: "uint256" },
+      { name: "amount", type: "uint256" },
+      { name: "data", type: "bytes" },
+    ],
+    outputs: [],
+  },
+] as const
 
 interface SendNFTModalProps {
   isOpen: boolean
@@ -32,7 +62,10 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
   const [recentRecipients, setRecentRecipients] = useState<FarcasterUser[]>([])
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false)
   const { walletAddress } = useFarcaster()
+  const { address: accountAddress } = useAccount()
+  const { writeContractAsync } = useWriteContract()
 
+  const fromAddress = accountAddress || (walletAddress as `0x${string}` | undefined)
   const myVerifiedAddresses = [walletAddress].filter(Boolean)
 
   useEffect(() => {
@@ -169,20 +202,14 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
     setIsSending(true)
 
     try {
-      const provider = farcasterSdk.wallet.ethProvider
-
-      if (!provider) {
-        throw new Error("Ethereum provider not available. Please open this app in Warpcast.")
+      if (!fromAddress) {
+        throw new Error("Wallet not connected")
       }
 
       const normalizedRecipient = recipient.toLowerCase()
 
       if (!normalizedRecipient.startsWith("0x")) {
         throw new Error("Invalid recipient address")
-      }
-
-      if (!walletAddress) {
-        throw new Error("Wallet not connected")
       }
 
       for (const nft of nftData || []) {
@@ -193,48 +220,38 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
           throw new Error("Missing contract address or token ID")
         }
 
-        let tokenIdHex: string
-        if (typeof rawTokenId === "string" && rawTokenId.startsWith("0x")) {
-          tokenIdHex = rawTokenId
-        } else {
-          tokenIdHex = "0x" + BigInt(rawTokenId).toString(16)
-        }
-
-        const fromPadded = walletAddress.slice(2).padStart(64, "0")
-        const toPadded = normalizedRecipient.slice(2).padStart(64, "0")
-        const tokenIdPadded = tokenIdHex.slice(2).padStart(64, "0")
-
+        const tokenId = BigInt(rawTokenId)
         const tokenType = nft.tokenType || nft.contract?.tokenType || ""
         const isERC1155 = tokenType.toUpperCase() === "ERC1155"
 
-        let encodedData: string
         if (isERC1155) {
           // ERC-1155 safeTransferFrom(address,address,uint256,uint256,bytes)
-          const functionSelector = "0xf242432a"
-          const amountPadded = "1".padStart(64, "0")
-          const dataOffsetPadded = "a0".padStart(64, "0") // 160 bytes offset to `bytes data`
-          const dataLengthPadded = "0".padStart(64, "0")  // empty bytes
-          encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded + amountPadded + dataOffsetPadded + dataLengthPadded
+          const txHash = await writeContractAsync({
+            address: contractAddress as `0x${string}`,
+            abi: erc1155Abi,
+            functionName: "safeTransferFrom",
+            args: [
+              fromAddress as `0x${string}`,
+              normalizedRecipient as `0x${string}`,
+              tokenId,
+              1n,
+              "0x" as `0x${string}`,
+            ],
+          })
+          console.log("[v0] ERC-1155 transfer tx:", txHash)
         } else {
           // ERC-721 safeTransferFrom(address,address,uint256)
-          const functionSelector = "0x42842e0e"
-          encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded
-        }
-
-        const txParams = {
-          from: walletAddress,
-          to: contractAddress,
-          data: encodedData,
-          value: "0x0",
-        }
-
-        const txHash = await provider.request({
-          method: "eth_sendTransaction",
-          params: [txParams],
-        })
-
-        if (!txHash) {
-          throw new Error("Transaction failed - no hash returned")
+          const txHash = await writeContractAsync({
+            address: contractAddress as `0x${string}`,
+            abi: erc721Abi,
+            functionName: "safeTransferFrom",
+            args: [
+              fromAddress as `0x${string}`,
+              normalizedRecipient as `0x${string}`,
+              tokenId,
+            ],
+          })
+          console.log("[v0] ERC-721 transfer tx:", txHash)
         }
       }
 
