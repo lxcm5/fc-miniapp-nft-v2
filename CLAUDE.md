@@ -29,6 +29,7 @@ Build игнорирует TS/ESLint ошибки (`next.config.mjs` — `ignore
 |---|---|---|
 | `ALCHEMY_API_KEY` | `app/api/nfts/route.ts`, `app/api/opensea-data/route.ts` | Да (server) |
 | `OPENSEA_API_KEY` | `app/api/opensea-data/route.ts` | Да (server) |
+| `NEYNAR_API_KEY` | `app/api/farcaster-search/route.ts` | Да (server) |
 | `NEXT_PUBLIC_ALCHEMY_KEY` | `app/debug/page.tsx` | Только для debug |
 | `NEXT_PUBLIC_ALCHEMY_BASE` | `app/debug/page.tsx` | Только для debug |
 
@@ -61,6 +62,7 @@ app/
     price-history/route.ts    # GET: floor price history (вызывает flow-price-history)
     flow-price-history/route.ts # GET: floor price events (Reservoir API)
     mint-nft/route.ts         # POST: stub — NFT minting (TODO)
+    farcaster-search/route.ts # GET: Farcaster user search proxy (Neynar)
     feedback/route.ts         # POST: feedback log
     webhook/route.ts          # POST: Farcaster webhook events
 
@@ -107,7 +109,7 @@ Calldata формируется вручную в `send-nft-modal.tsx`, отпр
 
 1. **График флора использует заглушку** — в `app/nft/[contract]/[tokenId]/page.tsx` переменная `floorPriceHistory` захардкожена массивом. Endpoint `/api/nfts?history=true&contractAddress=...` уже готов (Alchemy `getNFTSales`), нужно подключить к UI вместо заглушки.
 
-2. **Neynar demo ключ** — в `send-nft-modal.tsx` используется `api_key: "NEYNAR_API_DOCS"` (публичный demo). Для прода нужен реальный API ключ через env variable.
+2. ~~**Neynar demo ключ**~~ — **РЕШЕНО**: запросы к Neynar проксируются через `/api/farcaster-search/route.ts` с `process.env.NEYNAR_API_KEY`.
 
 3. **Mint endpoint — stub** — `app/api/mint-nft/route.ts` возвращает фейковый tx hash, логика не реализована.
 
