@@ -167,25 +167,30 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
   const handleSend = async () => {
     setIsSending(true)
+    console.log("[v0] handleSend called, nftData:", nftData)
 
     try {
       const provider = farcasterSdk.wallet.ethProvider
+      console.log("[v0] Provider:", provider)
 
       if (!provider) {
         throw new Error("Ethereum provider not available. Please open this app in Warpcast.")
       }
 
       const normalizedRecipient = recipient.toLowerCase()
+      console.log("[v0] Recipient:", normalizedRecipient)
 
       if (!normalizedRecipient.startsWith("0x")) {
         throw new Error("Invalid recipient address")
       }
 
       // Get actual user account from provider
+      console.log("[v0] Getting accounts...")
       const accounts = (await provider.request({
         method: "eth_accounts",
         params: [],
       })) as string[]
+      console.log("[v0] Accounts:", accounts)
 
       if (!accounts || accounts.length === 0) {
         throw new Error("No accounts available. Please connect your wallet.")
