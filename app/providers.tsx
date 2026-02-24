@@ -1,6 +1,9 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { MiniKitProvider, useMiniKit } from "@coinbase/onchainkit/minikit"
+import { base } from "wagmi/chains"
+import { useAccount, useConnect } from "wagmi"
 import farcasterSdk, { type Context } from "@farcaster/miniapp-sdk"
 
 interface FarcasterContextType {
@@ -29,95 +32,63 @@ export function useFarcaster() {
   return useContext(FarcasterContext)
 }
 
-export function FarcasterProvider({ children }: { children: ReactNode }) {
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false)
-  const [context, setContext] = useState<Context.FrameContext | null>(null)
-  const [walletAddress, setWalletAddress] = useState<string | null>(null)
-  const [ethBalance, setEthBalance] = useState<string | null>(null)
-  const [isWalletConnected, setIsWalletConnected] = useState(false)
-  const [sdkInstance, setSdkInstance] = useState<typeof farcasterSdk | null>(null)
-  const [isInFarcaster, setIsInFarcaster] = useState(false)
+function FarcasterProviderInner({ children }: { children: ReactNode }) {
+  const { setFrameReady, isFrameReady, context } = useMiniKit()
+  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount()
+  const { connect, connectors } = useConnect()
 
+  const [ethBalance, setEthBalance] = useState<string | null>(null)
+  const [cachedAddress, setCachedAddress] = useState<string | null>(null)
+
+  // Restore cached address from localStorage
   useEffect(() => {
     const savedAddress = localStorage.getItem("farcaster_wallet_address")
     const savedConnected = localStorage.getItem("farcaster_wallet_connected")
-
     console.log("[v0] Restored from localStorage:", { savedAddress, savedConnected })
 
     if (savedAddress && savedConnected === "true") {
-      setWalletAddress(savedAddress)
-      setIsWalletConnected(true)
+      setCachedAddress(savedAddress)
       fetchBalance(savedAddress)
     }
   }, [])
 
+  // Set frame ready on mount
   useEffect(() => {
-    const load = async () => {
-      try {
-        console.log("[v0] Initializing Farcaster SDK...")
-
-        setSdkInstance(farcasterSdk)
-        farcasterSdk.actions.ready()
-        setIsSDKLoaded(true)
-        console.log("[v0] SDK ready called and instance saved")
-
-        try {
-          const frameContext = await farcasterSdk.context
-          console.log("[v0] Frame context loaded successfully")
-          console.log("[v0] frameContext exists?", !!frameContext)
-          console.log("[v0] frameContext.user exists?", !!frameContext?.user)
-
-          if (frameContext?.user) {
-            console.log("[v0] === USER DATA START ===")
-            console.log("[v0] custody_address:", frameContext.user.custody_address)
-            console.log("[v0] verified_addresses object:", frameContext.user.verified_addresses)
-
-            if (frameContext.user.verified_addresses) {
-              console.log("[v0] eth_addresses array:", frameContext.user.verified_addresses.eth_addresses)
-              console.log(
-                "[v0] Number of eth addresses:",
-                frameContext.user.verified_addresses.eth_addresses?.length || 0,
-              )
-
-              frameContext.user.verified_addresses.eth_addresses?.forEach((addr, index) => {
-                console.log(`[v0] eth_address[${index}]:`, addr)
-              })
-            }
-            console.log("[v0] === USER DATA END ===")
-          }
-
-          setContext(frameContext)
-          setIsInFarcaster(true)
-
-          const address =
-            frameContext?.user?.custody_address || frameContext?.user?.verified_addresses?.eth_addresses?.[0]
-          console.log("[v0] Final wallet address extracted:", address)
-
-          if (address) {
-            setWalletAddress(address)
-            setIsWalletConnected(true)
-            localStorage.setItem("farcaster_wallet_address", address)
-            localStorage.setItem("farcaster_wallet_connected", "true")
-            console.log("[v0] Wallet connected and saved, fetching balance...")
-            await fetchBalance(address)
-          } else {
-            console.log("[v0] No address found in context")
-          }
-        } catch (contextError) {
-          console.log("[v0] Context not available (might be in browser):", contextError)
-          setIsInFarcaster(false)
-        }
-      } catch (error) {
-        console.error("[v0] Error loading SDK:", error)
-        setSdkInstance(farcasterSdk)
-        farcasterSdk.actions.ready()
-        setIsSDKLoaded(true)
-        setIsInFarcaster(false)
-      }
+    if (!isFrameReady) {
+      console.log("[v0] Setting frame ready via MiniKit...")
+      setFrameReady()
     }
+  }, [setFrameReady, isFrameReady])
 
-    load()
-  }, [])
+  // Extract address from MiniKit context (Farcaster user data)
+  const contextAddress =
+    (context as any)?.user?.verified_addresses?.eth_addresses?.[0] ||
+    (context as any)?.user?.custody_address
+
+  // Prefer wagmi address (works in both Farcaster and Base App),
+  // fallback to context address, then cached address
+  const walletAddress = wagmiAddress || contextAddress || cachedAddress || null
+  const isWalletConnected = wagmiConnected || !!walletAddress
+  const isInFarcaster = !!context
+
+  // Log context for debugging
+  useEffect(() => {
+    if (context) {
+      console.log("[v0] MiniKit context loaded:", !!context)
+      console.log("[v0] Context user:", (context as any)?.user)
+      console.log("[v0] isInFarcaster:", true)
+    }
+  }, [context])
+
+  // Fetch balance and persist address when wallet address changes
+  useEffect(() => {
+    if (walletAddress) {
+      console.log("[v0] Wallet address resolved:", walletAddress)
+      localStorage.setItem("farcaster_wallet_address", walletAddress)
+      localStorage.setItem("farcaster_wallet_connected", "true")
+      fetchBalance(walletAddress)
+    }
+  }, [walletAddress])
 
   const fetchBalance = async (address: string) => {
     try {
@@ -152,57 +123,47 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
 
   const connectWallet = async () => {
     try {
-      console.log("[v0] Connect wallet called")
-      const result = await farcasterSdk.wallet.ethProvider.request({
-        method: "eth_requestAccounts",
-      })
-
-      console.log("[v0] eth_requestAccounts result:", result)
-
-      if (result && Array.isArray(result) && result.length > 0) {
-        const address = result[0]
-        setWalletAddress(address)
-        setIsWalletConnected(true)
-        localStorage.setItem("farcaster_wallet_address", address)
-        localStorage.setItem("farcaster_wallet_connected", "true")
-        await fetchBalance(address)
-      } else {
-        const address = context?.user?.custody_address || context?.user?.verified_addresses?.eth_addresses?.[0]
-        if (address) {
-          setWalletAddress(address)
-          setIsWalletConnected(true)
-          localStorage.setItem("farcaster_wallet_address", address)
-          localStorage.setItem("farcaster_wallet_connected", "true")
-          await fetchBalance(address)
-        }
+      console.log("[v0] Connect wallet called via wagmi")
+      if (connectors.length > 0) {
+        connect({ connector: connectors[0] })
       }
     } catch (error) {
       console.error("[v0] Error connecting wallet:", error)
-      const address = context?.user?.custody_address || context?.user?.verified_addresses?.eth_addresses?.[0]
-      if (address) {
-        setWalletAddress(address)
-        setIsWalletConnected(true)
-        localStorage.setItem("farcaster_wallet_address", address)
-        localStorage.setItem("farcaster_wallet_connected", "true")
-        await fetchBalance(address)
-      }
     }
   }
 
   return (
     <FarcasterContext.Provider
       value={{
-        isSDKLoaded,
-        context,
+        isSDKLoaded: true,
+        context: (context as Context.FrameContext) || null,
         walletAddress,
         ethBalance,
         connectWallet,
         isWalletConnected,
-        sdk: sdkInstance || farcasterSdk,
+        sdk: farcasterSdk,
         isInFarcaster,
       }}
     >
       {children}
     </FarcasterContext.Provider>
+  )
+}
+
+export function FarcasterProvider({ children }: { children: ReactNode }) {
+  return (
+    <MiniKitProvider
+      apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
+      chain={base}
+      config={{
+        appearance: {
+          mode: "light" as const,
+          theme: "default" as const,
+          name: "NFT aWallet",
+        },
+      }}
+    >
+      <FarcasterProviderInner>{children}</FarcasterProviderInner>
+    </MiniKitProvider>
   )
 }

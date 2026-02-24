@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input"
 import { useState, useEffect } from "react"
 import { useFarcaster } from "@/app/providers"
 import { useEthPrice } from "@/hooks/use-eth-price"
+import { useSendTransaction } from "wagmi"
+import { parseEther } from "viem"
 
 interface DonateModalProps {
   open: boolean
@@ -17,8 +19,9 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
   const [usdValue, setUsdValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
-  const { walletAddress, sdk, isInFarcaster } = useFarcaster()
+  const { walletAddress, isInFarcaster } = useFarcaster()
   const { ethPrice } = useEthPrice()
+  const { sendTransactionAsync } = useSendTransaction()
 
   useEffect(() => {
     if (amount) {
@@ -33,40 +36,24 @@ export function DonateModal({ open, onOpenChange }: DonateModalProps) {
     if (open) {
       setIsSuccess(false)
       setAmount("")
-      if (!isInFarcaster) {
-        alert("Please donate from mobile app")
-        onOpenChange(false)
-      }
     }
-  }, [open, isInFarcaster, onOpenChange])
+  }, [open])
 
   const RECIPIENT_ADDRESS = "0xdBB9f76DC289B4cec58BCfe10923084F96Fa6Aee"
 
   const handleSend = async () => {
-    if (!amount || !walletAddress || !sdk) {
+    if (!amount || !walletAddress) {
       return
     }
 
     setIsLoading(true)
     setIsSuccess(false)
     try {
-      const amountInWei = BigInt(Math.floor(Number(amount) * 1e18))
-      const hexValue = "0x" + amountInWei.toString(16)
-      const hexGas = "0x5208"
-
       console.log(`[v0] Attempting to send ${amount} ETH from ${walletAddress}`)
-      console.log("[v0] Amount in wei (hex):", hexValue)
 
-      const txHash = await sdk.wallet.ethProvider.request({
-        method: "eth_sendTransaction",
-        params: [
-          {
-            from: walletAddress,
-            to: RECIPIENT_ADDRESS,
-            value: hexValue,
-            gas: hexGas,
-          },
-        ],
+      const txHash = await sendTransactionAsync({
+        to: RECIPIENT_ADDRESS as `0x${string}`,
+        value: parseEther(amount),
       })
 
       console.log("[v0] Transaction sent:", txHash)
