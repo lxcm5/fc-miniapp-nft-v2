@@ -213,7 +213,12 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         const fromPadded = userAddress.slice(2).padStart(64, "0")
         const toPadded = normalizedRecipient.slice(2).padStart(64, "0")
         const tokenIdPadded = tokenIdHex.slice(2).padStart(64, "0")
-        const encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded
+        // safeTransferFrom requires 4 parameters: from, to, tokenId, data
+        // data offset points to 0x100 (256 bits after parameters start)
+        const dataOffsetPadded = "0000000000000000000000000000000000000000000000000000000000000080"
+        // data length = 0 (empty data)
+        const dataLength = "0000000000000000000000000000000000000000000000000000000000000000"
+        const encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded + dataOffsetPadded + dataLength
 
         const txParams = {
           from: userAddress,
