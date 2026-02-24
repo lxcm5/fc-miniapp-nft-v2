@@ -181,9 +181,18 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         throw new Error("Invalid recipient address")
       }
 
-      if (!walletAddress) {
-        throw new Error("Wallet not connected")
+      // Get actual user account from provider
+      const accounts = (await provider.request({
+        method: "eth_accounts",
+        params: [],
+      })) as string[]
+
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No accounts available. Please connect your wallet.")
       }
+
+      const userAddress = accounts[0].toLowerCase()
+      console.log("[v0] Sending from account:", userAddress)
 
       for (const nft of nftData || []) {
         const contractAddress = nft.contractAddress || nft.contract?.address || nft.contract_address
@@ -201,17 +210,24 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         }
 
         const functionSelector = "0x42842e0e"
-        const fromPadded = walletAddress.slice(2).padStart(64, "0")
+        const fromPadded = userAddress.slice(2).padStart(64, "0")
         const toPadded = normalizedRecipient.slice(2).padStart(64, "0")
         const tokenIdPadded = tokenIdHex.slice(2).padStart(64, "0")
         const encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded
 
         const txParams = {
-          from: walletAddress,
+          from: userAddress,
           to: contractAddress,
           data: encodedData,
           value: "0x0",
         }
+
+        console.log("[v0] Sending transaction:", {
+          from: userAddress,
+          to: contractAddress,
+          tokenId: tokenIdHex,
+          recipient: normalizedRecipient,
+        })
 
         const txHash = await provider.request({
           method: "eth_sendTransaction",
@@ -221,6 +237,8 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
         if (!txHash) {
           throw new Error("Transaction failed - no hash returned")
         }
+
+        console.log("[v0] Transaction sent:", txHash)
       }
 
       saveRecentRecipient(recipient, selectedUser || undefined)
