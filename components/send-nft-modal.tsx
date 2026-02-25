@@ -173,6 +173,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
   useEffect(() => {
     if (!isOpen) return
+    setSendError(null)
   }, [isOpen])
 
   const handleSelectRecipient = (address: string, user?: FarcasterUser) => {
@@ -249,9 +250,9 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       console.error("Error sending NFT:", error)
       const message = error?.message || ""
       if (message.includes("execution reverted") || message.includes("revert")) {
-        setSendError("This NFT is non-transferable (soulbound)")
+        setSendError("This NFT cannot be transferred (soulbound/non-transferable)")
       } else if (message.includes("insufficient funds")) {
-        setSendError("Insufficient ETH for gas fees")
+        setSendError("Insufficient ETH to cover gas fees")
       } else {
         setSendError(message || "Unknown error")
       }
