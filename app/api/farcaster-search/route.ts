@@ -86,36 +86,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(result)
     }
 
-    // --- Username search via Warpcast ---
-    const url = `https://api.warpcast.com/v2/user-search?q=${encodeURIComponent(query!)}&limit=5`
-    console.log("[v0] Warpcast search URL:", url)
+    // --- Username search via Neynar by_username ---
+    const neynarApiKey = process.env.NEYNAR_API_KEY
+    if (!neynarApiKey) {
+      console.error("[v0] NEYNAR_API_KEY not set")
+      return NextResponse.json({ error: "NEYNAR_API_KEY not configured" }, { status: 500 })
+    }
+
+    const url = `https://api.neynar.com/v2/farcaster/user/by_username?username=${encodeURIComponent(query!)}`
+    console.log("[v0] Neynar by_username URL:", url)
 
     const response = await fetch(url, {
-      headers: { accept: "application/json" },
+      headers: {
+        accept: "application/json",
+        api_key: neynarApiKey,
+      },
     })
 
     if (!response.ok) {
       const text = await response.text()
-      console.error("[v0] Warpcast API error:", response.status, text)
-      return NextResponse.json({ error: "Warpcast API error" }, { status: response.status })
+      console.error("[v0] Neynar API error:", response.status, text)
+      if (response.status === 404) {
+        return NextResponse.json({ result: { users: [] } })
+      }
+      return NextResponse.json({ error: "Neynar API error" }, { status: response.status })
     }
 
     const data = await response.json()
-    console.log("[v0] Warpcast raw response keys:", Object.keys(data))
-    console.log("[v0] Warpcast search results count:", data.result?.users?.length ?? 0)
+    console.log("[v0] Neynar by_username response:", JSON.stringify(data).slice(0, 500))
 
-    const users = data.result?.users || []
+    const user = data.user
+    if (!user) {
+      return NextResponse.json({ result: { users: [] } })
+    }
 
-    // Fetch verified addresses for all users in parallel
-    const usersWithAddresses = await Promise.all(
-      users.map(async (user: any) => {
-        const ethAddresses = await fetchVerifications(user.fid)
-        return transformUser(user, ethAddresses)
-      }),
-    )
-
-    // Client expects: { result: { users: [...] } }
-    const result = { result: { users: usersWithAddresses } }
+    // Neynar already returns the format the client expects
+    const result = { result: { users: [user] } }
     console.log("[v0] Proxy returning search result:", JSON.stringify(result).slice(0, 500))
     return NextResponse.json(result)
   } catch (error) {
