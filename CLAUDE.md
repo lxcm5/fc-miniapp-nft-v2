@@ -117,12 +117,23 @@ Calldata формируется вручную в `send-nft-modal.tsx`, отпр
 
 5. **NFT data через URL params** — деталь NFT получает данные как `?data={encodedJSON}`. Прямой переход по URL без параметра покажет "NFT not found".
 
+## Language
+
+**The app language is English only.** This applies to everything without exception:
+- All UI text, labels, placeholders, button text, error messages, toast notifications
+- All code comments
+- Variable names, function names, type names
+- Console log messages
+- This CLAUDE.md file itself
+
+Do not use Russian or any other language anywhere in the codebase.
+
 ## Conventions
 
-- Все страницы и интерактивные компоненты — `"use client"`
+- All pages and interactive components — `"use client"`
 - Path alias: `@/*` -> project root (`@/components/...`, `@/lib/...`, `@/app/...`)
-- Console logging с префиксом `[v0]`
-- `components/ui/` — shadcn/ui, не редактировать вручную
-- Модалки: паттерн `open`/`onOpenChange` props + `Dialog` wrapper
-- Blockchain — только Base network (chain ID 8453)
-- CSS — oklch цвета, light theme only, Geist font
+- Console logging with prefix `[v0]`
+- `components/ui/` — shadcn/ui, do not edit manually
+- Modals: pattern `open`/`onOpenChange` props + `Dialog` wrapper
+- Blockchain — Base network only (chain ID 8453)
+- CSS — oklch colors, light theme only, Geist font
