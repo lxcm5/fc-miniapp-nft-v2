@@ -88,25 +88,63 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
     }
   }, [isOpen])
 
-  // Address search — debounce on input change
   useEffect(() => {
-    if (!recipient.startsWith("0x") || recipient.length <= 10) {
-      return
-    }
+    const searchUsers = async () => {
+      if (recipient.length < 2) {
+        setSearchResults([])
+        return
+      }
 
-    const timeoutId = setTimeout(async () => {
+      // Address search via Neynar bulk-by-address
+      if (recipient.startsWith("0x") && recipient.length > 10) {
+        setIsSearching(true)
+        try {
+          const response = await fetch(
+            `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${encodeURIComponent(recipient)}`,
+            { headers: { accept: "application/json", api_key: "NEYNAR_API_DOCS" } },
+          )
+          const data = await response.json()
+
+          if (data && Object.keys(data).length > 0) {
+            const users = Object.values(data)
+              .flat()
+              .map((user: any) => {
+                console.log("[v0] User data for address search:", user)
+                const ethAddress = getPreferredBaseAddress(user)
+                return {
+                  fid: user.fid,
+                  username: user.username,
+                  displayName: user.display_name || user.username,
+                  pfpUrl: user.pfp_url,
+                  ethAddress: ethAddress,
+                }
+              })
+            setSearchResults(users)
+          } else {
+            setSearchResults([])
+          }
+        } catch (error) {
+          console.error("Error searching by address:", error)
+          setSearchResults([])
+        } finally {
+          setIsSearching(false)
+        }
+        return
+      }
+
+      // Username search via Neynar user/search
       setIsSearching(true)
       try {
         const response = await fetch(
-          `/api/farcaster-search?address=${encodeURIComponent(recipient)}`,
+          `https://api.neynar.com/v2/farcaster/user/search?q=${encodeURIComponent(recipient)}&limit=5`,
+          { headers: { accept: "application/json", api_key: "NEYNAR_API_DOCS" } },
         )
         const data = await response.json()
 
-        if (data && Object.keys(data).length > 0) {
-          const users = Object.values(data)
-            .flat()
+        if (data.result?.users && data.result.users.length > 0) {
+          const users = data.result.users
             .map((user: any) => {
-              console.log("[v0] User data for address search:", user)
+              console.log("[v0] User search result:", user)
               const ethAddress = getPreferredBaseAddress(user)
               return {
                 fid: user.fid,
@@ -116,59 +154,22 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
                 ethAddress: ethAddress,
               }
             })
+            .filter((u: FarcasterUser) => u.ethAddress)
           setSearchResults(users)
         } else {
           setSearchResults([])
         }
       } catch (error) {
-        console.error("Error searching by address:", error)
+        console.error("Error searching Farcaster users:", error)
         setSearchResults([])
       } finally {
         setIsSearching(false)
       }
-    }, 300)
+    }
 
+    const timeoutId = setTimeout(searchUsers, 300)
     return () => clearTimeout(timeoutId)
   }, [recipient])
-
-  // Username search — manual trigger (Enter or Search button)
-  const handleSearchUsername = async () => {
-    if (!recipient || recipient.startsWith("0x")) return
-    setIsSearching(true)
-    setSearchResults([])
-    try {
-      const response = await fetch(
-        `/api/farcaster-search?q=${encodeURIComponent(recipient)}`,
-      )
-      const data = await response.json()
-
-      if (data.result?.users && data.result.users.length > 0) {
-        const users = data.result.users
-          .map((user: any) => {
-            console.log("[v0] User search result:", user)
-            console.log("[v0] Verified addresses:", user.verified_addresses)
-            const ethAddress = getPreferredBaseAddress(user)
-            console.log("[v0] Selected address:", ethAddress)
-            return {
-              fid: user.fid,
-              username: user.username,
-              displayName: user.display_name || user.username,
-              pfpUrl: user.pfp_url,
-              ethAddress: ethAddress,
-            }
-          })
-          .filter((u: FarcasterUser) => u.ethAddress)
-        setSearchResults(users)
-      } else {
-        setSearchResults([])
-      }
-    } catch (error) {
-      console.error("Error searching Farcaster users:", error)
-      setSearchResults([])
-    } finally {
-      setIsSearching(false)
-    }
-  }
 
   useEffect(() => {
     if (!isOpen) return
@@ -248,9 +249,9 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       console.error("Error sending NFT:", error)
       const message = error?.message || ""
       if (message.includes("execution reverted") || message.includes("revert")) {
-        setSendError("Этот NFT нельзя передавать (soulbound/non-transferable)")
+        setSendError("This NFT is non-transferable (soulbound)")
       } else if (message.includes("insufficient funds")) {
-        setSendError("Недостаточно ETH для оплаты газа")
+        setSendError("Insufficient ETH for gas fees")
       } else {
         setSendError(message || "Unknown error")
       }
@@ -305,33 +306,12 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">To</label>
-                <div className="relative">
-                  <Input
-                    placeholder="Address or username"
-                    value={recipient}
-                    onChange={(e) => {
-                      setRecipient(e.target.value)
-                      setSearchResults([])
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && recipient.length > 0 && !recipient.startsWith("0x")) {
-                        e.preventDefault()
-                        handleSearchUsername()
-                      }
-                    }}
-                    className="w-full pr-16"
-                  />
-                  {recipient.length > 0 && !recipient.startsWith("0x") && (
-                    <button
-                      type="button"
-                      onClick={handleSearchUsername}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-sm font-medium text-primary px-1"
-                    >
-                      Search
-                    </button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Введите точный username или 0x адрес</p>
+                <Input
+                  placeholder="Address or username"
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  className="w-full"
+                />
 
                 {isSearching && <div className="mt-2 p-2 text-sm text-muted-foreground">Searching...</div>}
 
