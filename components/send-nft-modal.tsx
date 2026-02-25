@@ -5,38 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState, useEffect } from "react"
 import { useFarcaster } from "@/app/providers"
-import { useAccount, useWriteContract } from "wagmi"
-import { DATA_SUFFIX } from "@/lib/builder-code"
-
-const erc721Abi = [
-  {
-    name: "safeTransferFrom",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "from", type: "address" },
-      { name: "to", type: "address" },
-      { name: "tokenId", type: "uint256" },
-    ],
-    outputs: [],
-  },
-] as const
-
-const erc1155Abi = [
-  {
-    name: "safeTransferFrom",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "from", type: "address" },
-      { name: "to", type: "address" },
-      { name: "id", type: "uint256" },
-      { name: "amount", type: "uint256" },
-      { name: "data", type: "bytes" },
-    ],
-    outputs: [],
-  },
-] as const
+import farcasterSdk from "@farcaster/miniapp-sdk"
 
 interface SendNFTModalProps {
   isOpen: boolean
@@ -60,14 +29,10 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
   const [searchResults, setSearchResults] = useState<FarcasterUser[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isSending, setIsSending] = useState(false)
-  const [sendError, setSendError] = useState<string | null>(null)
   const [recentRecipients, setRecentRecipients] = useState<FarcasterUser[]>([])
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false)
   const { walletAddress } = useFarcaster()
-  const { address: accountAddress } = useAccount()
-  const { writeContractAsync } = useWriteContract()
 
-  const fromAddress = accountAddress || (walletAddress as `0x${string}` | undefined)
   const myVerifiedAddresses = [walletAddress].filter(Boolean)
 
   useEffect(() => {
@@ -88,26 +53,81 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
     }
   }, [isOpen])
 
-  // Address search — debounce on input change
   useEffect(() => {
-    if (!recipient.startsWith("0x") || recipient.length <= 10) {
-      return
-    }
+    const searchUsers = async () => {
+      if (recipient.length < 2) {
+        setSearchResults([])
+        return
+      }
 
-    const timeoutId = setTimeout(async () => {
+      if (recipient.startsWith("0x") && recipient.length > 10) {
+        setIsSearching(true)
+
+        try {
+          const response = await fetch(
+            `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${recipient}`,
+            {
+              headers: {
+                accept: "application/json",
+                api_key: "NEYNAR_API_DOCS",
+              },
+            },
+          )
+
+          const data = await response.json()
+
+          if (data && Object.keys(data).length > 0) {
+            const users = Object.values(data)
+              .flat()
+              .map((user: any) => {
+                console.log("[v0] User data for address search:", user)
+                const ethAddress = getPreferredBaseAddress(user)
+
+                return {
+                  fid: user.fid,
+                  username: user.username,
+                  displayName: user.display_name || user.username,
+                  pfpUrl: user.pfp_url,
+                  ethAddress: ethAddress,
+                }
+              })
+
+            setSearchResults(users)
+          } else {
+            setSearchResults([])
+          }
+        } catch (error) {
+          console.error("Error searching by address:", error)
+          setSearchResults([])
+        } finally {
+          setIsSearching(false)
+        }
+        return
+      }
+
       setIsSearching(true)
+
       try {
         const response = await fetch(
-          `/api/farcaster-search?address=${encodeURIComponent(recipient)}`,
+          `https://api.neynar.com/v2/farcaster/user/search?q=${encodeURIComponent(recipient)}&limit=5`,
+          {
+            headers: {
+              accept: "application/json",
+              api_key: "NEYNAR_API_DOCS",
+            },
+          },
         )
+
         const data = await response.json()
 
-        if (data && Object.keys(data).length > 0) {
-          const users = Object.values(data)
-            .flat()
+        if (data.result?.users && data.result.users.length > 0) {
+          const users = data.result.users
             .map((user: any) => {
-              console.log("[v0] User data for address search:", user)
+              console.log("[v0] User search result:", user)
+              console.log("[v0] Verified addresses:", user.verified_addresses)
               const ethAddress = getPreferredBaseAddress(user)
+              console.log("[v0] Selected address:", ethAddress)
+
               return {
                 fid: user.fid,
                 username: user.username,
@@ -116,59 +136,23 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
                 ethAddress: ethAddress,
               }
             })
+            .filter((u: FarcasterUser) => u.ethAddress)
+
           setSearchResults(users)
         } else {
           setSearchResults([])
         }
       } catch (error) {
-        console.error("Error searching by address:", error)
+        console.error("Error searching Farcaster users:", error)
         setSearchResults([])
       } finally {
         setIsSearching(false)
       }
-    }, 300)
+    }
 
+    const timeoutId = setTimeout(searchUsers, 300)
     return () => clearTimeout(timeoutId)
   }, [recipient])
-
-  // Username search — manual trigger (Enter or Search button)
-  const handleSearchUsername = async () => {
-    if (!recipient || recipient.startsWith("0x")) return
-    setIsSearching(true)
-    setSearchResults([])
-    try {
-      const response = await fetch(
-        `/api/farcaster-search?q=${encodeURIComponent(recipient)}`,
-      )
-      const data = await response.json()
-
-      if (data.result?.users && data.result.users.length > 0) {
-        const users = data.result.users
-          .map((user: any) => {
-            console.log("[v0] User search result:", user)
-            console.log("[v0] Verified addresses:", user.verified_addresses)
-            const ethAddress = getPreferredBaseAddress(user)
-            console.log("[v0] Selected address:", ethAddress)
-            return {
-              fid: user.fid,
-              username: user.username,
-              displayName: user.display_name || user.username,
-              pfpUrl: user.pfp_url,
-              ethAddress: ethAddress,
-            }
-          })
-          .filter((u: FarcasterUser) => u.ethAddress)
-        setSearchResults(users)
-      } else {
-        setSearchResults([])
-      }
-    } catch (error) {
-      console.error("Error searching Farcaster users:", error)
-      setSearchResults([])
-    } finally {
-      setIsSearching(false)
-    }
-  }
 
   useEffect(() => {
     if (!isOpen) return
@@ -183,17 +167,22 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
   const handleSend = async () => {
     setIsSending(true)
-    setSendError(null)
 
     try {
-      if (!fromAddress) {
-        throw new Error("Wallet not connected")
+      const provider = farcasterSdk.wallet.ethProvider
+
+      if (!provider) {
+        throw new Error("Ethereum provider not available. Please open this app in Warpcast.")
       }
 
       const normalizedRecipient = recipient.toLowerCase()
 
       if (!normalizedRecipient.startsWith("0x")) {
         throw new Error("Invalid recipient address")
+      }
+
+      if (!walletAddress) {
+        throw new Error("Wallet not connected")
       }
 
       for (const nft of nftData || []) {
@@ -204,40 +193,33 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
           throw new Error("Missing contract address or token ID")
         }
 
-        const tokenId = BigInt(rawTokenId)
-        const tokenType = nft.tokenType || nft.contract?.tokenType || ""
-        const isERC1155 = tokenType.toUpperCase() === "ERC1155"
-
-        if (isERC1155) {
-          // ERC-1155 safeTransferFrom(address,address,uint256,uint256,bytes)
-          const txHash = await writeContractAsync({
-            address: contractAddress as `0x${string}`,
-            abi: erc1155Abi,
-            functionName: "safeTransferFrom",
-            args: [
-              fromAddress as `0x${string}`,
-              normalizedRecipient as `0x${string}`,
-              tokenId,
-              1n,
-              "0x" as `0x${string}`,
-            ],
-            dataSuffix: DATA_SUFFIX,
-          })
-          console.log("[v0] ERC-1155 transfer tx:", txHash)
+        let tokenIdHex: string
+        if (typeof rawTokenId === "string" && rawTokenId.startsWith("0x")) {
+          tokenIdHex = rawTokenId
         } else {
-          // ERC-721 safeTransferFrom(address,address,uint256)
-          const txHash = await writeContractAsync({
-            address: contractAddress as `0x${string}`,
-            abi: erc721Abi,
-            functionName: "safeTransferFrom",
-            args: [
-              fromAddress as `0x${string}`,
-              normalizedRecipient as `0x${string}`,
-              tokenId,
-            ],
-            dataSuffix: DATA_SUFFIX,
-          })
-          console.log("[v0] ERC-721 transfer tx:", txHash)
+          tokenIdHex = "0x" + BigInt(rawTokenId).toString(16)
+        }
+
+        const functionSelector = "0x42842e0e"
+        const fromPadded = walletAddress.slice(2).padStart(64, "0")
+        const toPadded = normalizedRecipient.slice(2).padStart(64, "0")
+        const tokenIdPadded = tokenIdHex.slice(2).padStart(64, "0")
+        const encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded
+
+        const txParams = {
+          from: walletAddress,
+          to: contractAddress,
+          data: encodedData,
+          value: "0x0",
+        }
+
+        const txHash = await provider.request({
+          method: "eth_sendTransaction",
+          params: [txParams],
+        })
+
+        if (!txHash) {
+          throw new Error("Transaction failed - no hash returned")
         }
       }
 
@@ -246,14 +228,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       setStep("success")
     } catch (error: any) {
       console.error("Error sending NFT:", error)
-      const message = error?.message || ""
-      if (message.includes("execution reverted") || message.includes("revert")) {
-        setSendError("Этот NFT нельзя передавать (soulbound/non-transferable)")
-      } else if (message.includes("insufficient funds")) {
-        setSendError("Недостаточно ETH для оплаты газа")
-      } else {
-        setSendError(message || "Unknown error")
-      }
+      alert(`Error sending NFT: ${error?.message || "Unknown error"}`)
     } finally {
       setIsSending(false)
     }
@@ -267,7 +242,6 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       setSelectedUser(null)
       setSearchResults([])
       setIsAddressConfirmed(false)
-      setSendError(null)
     }, 300)
   }
 
@@ -305,33 +279,12 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">To</label>
-                <div className="relative">
-                  <Input
-                    placeholder="Address or username"
-                    value={recipient}
-                    onChange={(e) => {
-                      setRecipient(e.target.value)
-                      setSearchResults([])
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && recipient.length > 0 && !recipient.startsWith("0x")) {
-                        e.preventDefault()
-                        handleSearchUsername()
-                      }
-                    }}
-                    className="w-full pr-16"
-                  />
-                  {recipient.length > 0 && !recipient.startsWith("0x") && (
-                    <button
-                      type="button"
-                      onClick={handleSearchUsername}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-sm font-medium text-primary px-1"
-                    >
-                      Search
-                    </button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Username or 0x wallet</p>
+                <Input
+                  placeholder="Address or username"
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  className="w-full"
+                />
 
                 {isSearching && <div className="mt-2 p-2 text-sm text-muted-foreground">Searching...</div>}
 
@@ -498,16 +451,13 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" onClick={() => { setSendError(null); setStep("recipient") }} disabled={isSending}>
+                <Button variant="outline" onClick={() => setStep("recipient")} disabled={isSending}>
                   Back
                 </Button>
                 <Button onClick={handleSend} className="bg-primary" disabled={isSending || !isAddressConfirmed}>
                   {isSending ? "Sending..." : "Send"}
                 </Button>
               </div>
-              {sendError && (
-                <p className="text-sm text-red-500 mt-2">{sendError}</p>
-              )}
             </div>
           </>
         ) : (
