@@ -247,10 +247,12 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
     } catch (error: any) {
       console.error("Error sending NFT:", error)
       const message = error?.message || ""
-      if (message.includes("execution reverted") || message.includes("revert")) {
-        setSendError("Этот NFT нельзя передавать (soulbound/non-transferable)")
+      if (message.includes("User rejected") || message.includes("user rejected") || message.includes("denied")) {
+        setSendError("Transaction cancelled")
+      } else if (message.includes("execution reverted") || message.includes("revert")) {
+        setSendError("This NFT cannot be transferred (soulbound/non-transferable)")
       } else if (message.includes("insufficient funds")) {
-        setSendError("Недостаточно ETH для оплаты газа")
+        setSendError("Insufficient ETH to cover gas fees")
       } else {
         setSendError(message || "Unknown error")
       }
