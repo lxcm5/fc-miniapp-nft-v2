@@ -7,7 +7,7 @@ import { useFarcaster } from "@/app/providers"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { ArrowUpNarrowWide, ArrowDownWideNarrow } from "lucide-react"
+import { ArrowUpNarrowWide, ArrowDownWideNarrow, House } from "lucide-react"
 import { Menu } from "@/components/menu-dropdown"
 import { useEthPrice } from "@/hooks/use-eth-price"
 
@@ -27,6 +27,10 @@ export default function Page() {
   const [nftCount, setNftCount] = useState<number>(0)
   const [nftTotalValue, setNftTotalValue] = useState<number>(0)
 
+  // View another wallet state
+  const [viewingAddress, setViewingAddress] = useState<string | null>(null)
+  const [viewingUsername, setViewingUsername] = useState<string | null>(null)
+
   // Pull-to-refresh state
   const [pullDelta, setPullDelta] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -40,10 +44,11 @@ export default function Page() {
   const router = useRouter()
 
   const fetchNFTStats = useCallback(async () => {
-    if (!walletAddress) return
+    const targetAddress = viewingAddress || walletAddress
+    if (!targetAddress) return
 
     try {
-      const response = await fetch(`/api/nfts?address=${walletAddress}`)
+      const response = await fetch(`/api/nfts?address=${targetAddress}`)
       const data = await response.json()
 
       if (data.error) return
@@ -70,7 +75,7 @@ export default function Page() {
     } catch (error) {
       console.error("[v0] Error fetching NFT stats:", error)
     }
-  }, [walletAddress])
+  }, [walletAddress, viewingAddress])
 
   useEffect(() => {
     fetchNFTStats()
@@ -289,7 +294,12 @@ export default function Page() {
                 <Button variant="outline" size="sm" onClick={() => router.push("/hidden")} className="bg-transparent">
                   Hidden NFTs
                 </Button>
-                <Menu />
+                <Menu
+                  onViewWallet={(address, username) => {
+                    setViewingAddress(address)
+                    setViewingUsername(username || null)
+                  }}
+                />
               </div>
             </div>
 
@@ -329,13 +339,33 @@ export default function Page() {
             <>
               {!isHeaderCollapsed && (
                 <div className="mb-3">
-                  <WalletBalance />
+                  <WalletBalance address={viewingAddress || undefined} />
                 </div>
               )}
 
               <div className="flex items-center justify-between mb-1">
-                {!isHeaderCollapsed && <h2 className="text-sm font-semibold text-foreground">My Collection</h2>}
+                {!isHeaderCollapsed && (
+                  <h2 className="text-sm font-semibold text-foreground">
+                    {viewingAddress
+                      ? `${viewingUsername ? viewingUsername : viewingAddress.slice(0, 6) + "..." + viewingAddress.slice(-4)} Collection`
+                      : "My Collection"}
+                  </h2>
+                )}
                 <div className="flex items-center gap-2 ml-auto">
+                  {viewingAddress && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setViewingAddress(null)
+                        setViewingUsername(null)
+                      }}
+                      className="flex items-center gap-1 bg-transparent px-2"
+                      title="Back to my wallet"
+                    >
+                      <House className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -408,6 +438,7 @@ export default function Page() {
             sortBy={sortBy}
             sortDirection={sortDirection}
             refreshKey={refreshKey}
+            address={viewingAddress || undefined}
           />
         )}
       </div>

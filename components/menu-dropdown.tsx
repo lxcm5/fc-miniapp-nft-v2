@@ -6,13 +6,19 @@ import { useState } from "react"
 import { AboutModal } from "./modals/about-modal"
 import { WhatsNewModal } from "./modals/whats-new-modal"
 import { DonateModal } from "./modals/donate-modal"
-import { Menu } from "lucide-react"
+import { ViewWalletModal } from "./view-wallet-modal"
+import { Menu, Search } from "lucide-react"
 import { useFarcaster } from "@/app/providers"
 
-export function MenuDropdown() {
+interface MenuDropdownProps {
+  onViewWallet?: (address: string, username?: string) => void
+}
+
+export function MenuDropdown({ onViewWallet }: MenuDropdownProps) {
   const [aboutOpen, setAboutOpen] = useState(false)
   const [whatsNewOpen, setWhatsNewOpen] = useState(false)
   const [donateOpen, setDonateOpen] = useState(false)
+  const [viewWalletOpen, setViewWalletOpen] = useState(false)
   const { sdk } = useFarcaster()
 
   const handleCastFeedback = async () => {
@@ -36,6 +42,10 @@ export function MenuDropdown() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48 py-2">
+          <DropdownMenuItem onClick={() => setViewWalletOpen(true)} className="py-2.5 cursor-pointer hover:bg-muted">
+            <Search className="w-4 h-4 mr-2" />
+            View Wallet
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setAboutOpen(true)} className="py-2.5 cursor-pointer hover:bg-muted">
             About
           </DropdownMenuItem>
@@ -48,6 +58,13 @@ export function MenuDropdown() {
         </DropdownMenuContent>
       </DropdownMenu>
 
+      <ViewWalletModal
+        open={viewWalletOpen}
+        onOpenChange={setViewWalletOpen}
+        onViewWallet={(address, username) => {
+          onViewWallet?.(address, username)
+        }}
+      />
       <AboutModal
         open={aboutOpen}
         onOpenChange={setAboutOpen}
