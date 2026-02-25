@@ -288,6 +288,12 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
     }, 300)
   }
 
+  const handleRemoveRecent = (address: string) => {
+    const updated = recentRecipients.filter((r) => r.ethAddress !== address)
+    setRecentRecipients(updated)
+    localStorage.setItem('recentNFTRecipients', JSON.stringify(updated))
+  }
+
   const saveRecentRecipient = (address: string, user?: FarcasterUser) => {
     try {
       const stored = localStorage.getItem("recentNFTRecipients")
@@ -390,29 +396,37 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
                 {recentRecipients.length > 0 ? (
                   <div className="space-y-2">
                     {recentRecipients.map((user, index) => (
-                      <button
-                        key={user.ethAddress || index}
-                        onClick={() => handleSelectRecipient(user.ethAddress || "", user)}
-                        className="w-full text-left p-3 rounded-lg border border-border hover:bg-muted transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
-                          {user.pfpUrl && (
-                            <img src={user.pfpUrl || "/placeholder.svg"} alt="" className="w-6 h-6 rounded-full" />
-                          )}
-                          <div className="flex-1">
-                            {user.username ? (
-                              <>
-                                <p className="text-sm font-medium">{user.displayName}</p>
-                                <p className="text-xs text-muted-foreground">@{user.username}</p>
-                              </>
-                            ) : (
-                              <p className="text-sm font-mono">
-                                {user.ethAddress?.slice(0, 6)}...{user.ethAddress?.slice(-4)}
-                              </p>
+                      <div key={user.ethAddress || index} className="relative">
+                        <button
+                          onClick={() => handleSelectRecipient(user.ethAddress || "", user)}
+                          className="w-full text-left p-3 rounded-lg border border-border hover:bg-muted transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            {user.pfpUrl && (
+                              <img src={user.pfpUrl || "/placeholder.svg"} alt="" className="w-6 h-6 rounded-full" />
                             )}
+                            <div className="flex-1">
+                              {user.username ? (
+                                <>
+                                  <p className="text-sm font-medium">{user.displayName}</p>
+                                  <p className="text-xs text-muted-foreground">@{user.username}</p>
+                                </>
+                              ) : (
+                                <p className="text-sm font-mono">
+                                  {user.ethAddress?.slice(0, 6)}...{user.ethAddress?.slice(-4)}
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleRemoveRecent(user.ethAddress || '') }}
+                              className="ml-auto text-muted-foreground hover:text-foreground text-lg leading-none px-1"
+                            >
+                              ×
+                            </button>
                           </div>
-                        </div>
-                      </button>
+                        </button>
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -502,7 +516,9 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
                 </Button>
               </div>
               {sendError && (
-                <p className="text-sm text-red-500 mt-2">{sendError}</p>
+                <p className="text-sm text-red-500 mt-2 break-words overflow-hidden">
+                  {sendError.length > 120 ? sendError.slice(0, 120) + '...' : sendError}
+                </p>
               )}
             </div>
           </>
