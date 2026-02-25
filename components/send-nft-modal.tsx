@@ -331,7 +331,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Введите точный username или 0x адрес</p>
+                <p className="text-xs text-muted-foreground mt-1">Username or 0x wallet</p>
 
                 {isSearching && <div className="mt-2 p-2 text-sm text-muted-foreground">Searching...</div>}
 
