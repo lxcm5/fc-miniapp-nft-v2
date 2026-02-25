@@ -88,69 +88,26 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
     }
   }, [isOpen])
 
+  // Address search — debounce on input change
   useEffect(() => {
-    const searchUsers = async () => {
-      if (recipient.length < 2) {
-        setSearchResults([])
-        return
-      }
+    if (!recipient.startsWith("0x") || recipient.length <= 10) {
+      return
+    }
 
-      if (recipient.startsWith("0x") && recipient.length > 10) {
-        setIsSearching(true)
-
-        try {
-          const response = await fetch(
-            `/api/farcaster-search?address=${encodeURIComponent(recipient)}`,
-          )
-
-          const data = await response.json()
-
-          if (data && Object.keys(data).length > 0) {
-            const users = Object.values(data)
-              .flat()
-              .map((user: any) => {
-                console.log("[v0] User data for address search:", user)
-                const ethAddress = getPreferredBaseAddress(user)
-
-                return {
-                  fid: user.fid,
-                  username: user.username,
-                  displayName: user.display_name || user.username,
-                  pfpUrl: user.pfp_url,
-                  ethAddress: ethAddress,
-                }
-              })
-
-            setSearchResults(users)
-          } else {
-            setSearchResults([])
-          }
-        } catch (error) {
-          console.error("Error searching by address:", error)
-          setSearchResults([])
-        } finally {
-          setIsSearching(false)
-        }
-        return
-      }
-
+    const timeoutId = setTimeout(async () => {
       setIsSearching(true)
-
       try {
         const response = await fetch(
-          `/api/farcaster-search?q=${encodeURIComponent(recipient)}`,
+          `/api/farcaster-search?address=${encodeURIComponent(recipient)}`,
         )
-
         const data = await response.json()
 
-        if (data.result?.users && data.result.users.length > 0) {
-          const users = data.result.users
+        if (data && Object.keys(data).length > 0) {
+          const users = Object.values(data)
+            .flat()
             .map((user: any) => {
-              console.log("[v0] User search result:", user)
-              console.log("[v0] Verified addresses:", user.verified_addresses)
+              console.log("[v0] User data for address search:", user)
               const ethAddress = getPreferredBaseAddress(user)
-              console.log("[v0] Selected address:", ethAddress)
-
               return {
                 fid: user.fid,
                 username: user.username,
@@ -159,23 +116,59 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
                 ethAddress: ethAddress,
               }
             })
-            .filter((u: FarcasterUser) => u.ethAddress)
-
           setSearchResults(users)
         } else {
           setSearchResults([])
         }
       } catch (error) {
-        console.error("Error searching Farcaster users:", error)
+        console.error("Error searching by address:", error)
         setSearchResults([])
       } finally {
         setIsSearching(false)
       }
-    }
+    }, 300)
 
-    const timeoutId = setTimeout(searchUsers, 300)
     return () => clearTimeout(timeoutId)
   }, [recipient])
+
+  // Username search — manual trigger (Enter or Search button)
+  const handleSearchUsername = async () => {
+    if (!recipient || recipient.startsWith("0x")) return
+    setIsSearching(true)
+    setSearchResults([])
+    try {
+      const response = await fetch(
+        `/api/farcaster-search?q=${encodeURIComponent(recipient)}`,
+      )
+      const data = await response.json()
+
+      if (data.result?.users && data.result.users.length > 0) {
+        const users = data.result.users
+          .map((user: any) => {
+            console.log("[v0] User search result:", user)
+            console.log("[v0] Verified addresses:", user.verified_addresses)
+            const ethAddress = getPreferredBaseAddress(user)
+            console.log("[v0] Selected address:", ethAddress)
+            return {
+              fid: user.fid,
+              username: user.username,
+              displayName: user.display_name || user.username,
+              pfpUrl: user.pfp_url,
+              ethAddress: ethAddress,
+            }
+          })
+          .filter((u: FarcasterUser) => u.ethAddress)
+        setSearchResults(users)
+      } else {
+        setSearchResults([])
+      }
+    } catch (error) {
+      console.error("Error searching Farcaster users:", error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
 
   useEffect(() => {
     if (!isOpen) return
@@ -312,12 +305,33 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">To</label>
-                <Input
-                  placeholder="Address or username"
-                  value={recipient}
-                  onChange={(e) => setRecipient(e.target.value)}
-                  className="w-full"
-                />
+                <div className="relative">
+                  <Input
+                    placeholder="Address or username"
+                    value={recipient}
+                    onChange={(e) => {
+                      setRecipient(e.target.value)
+                      setSearchResults([])
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && recipient.length > 0 && !recipient.startsWith("0x")) {
+                        e.preventDefault()
+                        handleSearchUsername()
+                      }
+                    }}
+                    className="w-full pr-16"
+                  />
+                  {recipient.length > 0 && !recipient.startsWith("0x") && (
+                    <button
+                      type="button"
+                      onClick={handleSearchUsername}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-sm font-medium text-primary px-1"
+                    >
+                      Search
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Введите точный username или 0x адрес</p>
 
                 {isSearching && <div className="mt-2 p-2 text-sm text-muted-foreground">Searching...</div>}
 
