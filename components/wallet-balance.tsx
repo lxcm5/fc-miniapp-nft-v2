@@ -4,13 +4,27 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useFarcaster } from "@/app/providers"
 import { useEffect, useState } from "react"
-import { Copy, Check } from "lucide-react"
+import { Copy, Check, Eye, EyeOff } from "lucide-react"
 
 export function WalletBalance() {
   const { isSDKLoaded, walletAddress, ethBalance, isWalletConnected, connectWallet } = useFarcaster()
   const [nftCount, setNftCount] = useState<number>(0)
   const [nftTotalValue, setNftTotalValue] = useState<number>(0)
   const [copied, setCopied] = useState(false)
+  const [balanceHidden, setBalanceHidden] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("balance_hidden") === "true"
+    }
+    return false
+  })
+
+  const toggleBalanceHidden = () => {
+    setBalanceHidden((prev) => {
+      const next = !prev
+      localStorage.setItem("balance_hidden", String(next))
+      return next
+    })
+  }
 
   useEffect(() => {
     const fetchNFTStats = async () => {
@@ -69,13 +83,24 @@ export function WalletBalance() {
       <div className="flex items-start justify-between">
         {/* Left side - ETH Balance */}
         <div className="flex-1">
-          <p className="text-sm text-muted-foreground mb-1">Wallet Balance</p>
+          <div className="flex items-center gap-2 mb-1">
+            <p className="text-sm text-muted-foreground">Wallet Balance</p>
+            {isWalletConnected && ethBalance !== null && (
+              <button
+                onClick={toggleBalanceHidden}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title={balanceHidden ? "Show balance" : "Hide balance"}
+              >
+                {balanceHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            )}
+          </div>
           {isSDKLoaded ? (
             <>
               {isWalletConnected && ethBalance !== null ? (
                 <>
-                  <h2 className="text-[1.44rem] font-semibold text-foreground">{ethBalance} ETH</h2>
-                  <p className="text-sm text-muted-foreground mt-1">≈ ${usdBalance} USD</p>
+                  <h2 className="text-[1.44rem] font-semibold text-foreground">{balanceHidden ? "••••" : `${ethBalance} ETH`}</h2>
+                  <p className="text-sm text-muted-foreground mt-1">{balanceHidden ? "••••" : `≈ $${usdBalance} USD`}</p>
                   {walletAddress && (
                     <div className="flex items-center gap-2 mt-2">
                       <p className="text-xs text-muted-foreground font-mono">
@@ -110,8 +135,8 @@ export function WalletBalance() {
           <div className="flex-1 text-right">
             <p className="text-sm text-muted-foreground mb-1">NFT Collection</p>
             <h2 className="text-[1.44rem] font-semibold text-foreground">{nftCount} NFTs</h2>
-            <p className="text-sm text-muted-foreground mt-1">≈ {nftTotalValue.toFixed(3)} ETH</p>
-            <p className="text-xs text-muted-foreground mt-1">≈ ${nftUsdValue} USD</p>
+            <p className="text-sm text-muted-foreground mt-1">{balanceHidden ? "••••" : `≈ ${nftTotalValue.toFixed(3)} ETH`}</p>
+            <p className="text-xs text-muted-foreground mt-1">{balanceHidden ? "••••" : `≈ $${nftUsdValue} USD`}</p>
           </div>
         ) : null}
       </div>
