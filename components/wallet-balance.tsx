@@ -6,11 +6,18 @@ import { useFarcaster } from "@/app/providers"
 import { useEffect, useState } from "react"
 import { Copy, Check, Eye, EyeOff } from "lucide-react"
 
-export function WalletBalance() {
+interface WalletBalanceProps {
+  /** Override address to display another wallet's balance and NFT stats */
+  address?: string
+}
+
+export function WalletBalance({ address: addressProp }: WalletBalanceProps = {}) {
   const { isSDKLoaded, walletAddress, ethBalance, isWalletConnected, connectWallet } = useFarcaster()
+  const effectiveAddress = addressProp || walletAddress
   const [nftCount, setNftCount] = useState<number>(0)
   const [nftTotalValue, setNftTotalValue] = useState<number>(0)
   const [copied, setCopied] = useState(false)
+  const [overrideEthBalance, setOverrideEthBalance] = useState<string | null>(null)
   const [balanceHidden, setBalanceHidden] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("balance_hidden") === "true"
@@ -26,12 +33,44 @@ export function WalletBalance() {
     })
   }
 
+  // Fetch ETH balance for overridden address
+  useEffect(() => {
+    if (!addressProp) {
+      setOverrideEthBalance(null)
+      return
+    }
+    const fetchOverrideBalance = async () => {
+      try {
+        const response = await fetch("https://mainnet.base.org", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "eth_getBalance",
+            params: [addressProp, "latest"],
+            id: 1,
+          }),
+        })
+        const data = await response.json()
+        if (data.result) {
+          const balanceInWei = BigInt(data.result)
+          const balanceInEth = Number(balanceInWei) / 1e18
+          setOverrideEthBalance(balanceInEth.toFixed(4))
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching override balance:", error)
+        setOverrideEthBalance("0.0000")
+      }
+    }
+    fetchOverrideBalance()
+  }, [addressProp])
+
   useEffect(() => {
     const fetchNFTStats = async () => {
-      if (!walletAddress) return
+      if (!effectiveAddress) return
 
       try {
-        const response = await fetch(`/api/nfts?address=${walletAddress}`)
+        const response = await fetch(`/api/nfts?address=${effectiveAddress}`)
         const data = await response.json()
 
         if (data.error) {
@@ -64,18 +103,19 @@ export function WalletBalance() {
     }
 
     fetchNFTStats()
-  }, [walletAddress])
+  }, [effectiveAddress])
 
   const handleCopy = () => {
-    if (walletAddress) {
-      navigator.clipboard.writeText(walletAddress)
+    if (effectiveAddress) {
+      navigator.clipboard.writeText(effectiveAddress)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
   }
 
+  const displayEthBalance = addressProp ? overrideEthBalance : ethBalance
   const ethToUsd = 2850
-  const usdBalance = ethBalance ? (Number.parseFloat(ethBalance) * ethToUsd).toFixed(2) : "0.00"
+  const usdBalance = displayEthBalance ? (Number.parseFloat(displayEthBalance) * ethToUsd).toFixed(2) : "0.00"
   const nftUsdValue = (nftTotalValue * ethToUsd).toFixed(2)
 
   return (
@@ -97,14 +137,14 @@ export function WalletBalance() {
           </div>
           {isSDKLoaded ? (
             <>
-              {isWalletConnected && ethBalance !== null ? (
+              {(isWalletConnected || addressProp) && (displayEthBalance !== null || addressProp) ? (
                 <>
-                  <h2 className="text-[1.44rem] font-semibold text-foreground">{balanceHidden ? "••••" : `${ethBalance} ETH`}</h2>
+                  <h2 className="text-[1.44rem] font-semibold text-foreground">{balanceHidden ? "••••" : `${displayEthBalance ?? "..."} ETH`}</h2>
                   <p className="text-sm text-muted-foreground mt-1">{balanceHidden ? "••••" : `≈ $${usdBalance} USD`}</p>
-                  {walletAddress && (
+                  {effectiveAddress && (
                     <div className="flex items-center gap-2 mt-2">
                       <p className="text-xs text-muted-foreground font-mono">
-                        {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                        {effectiveAddress.slice(0, 6)}...{effectiveAddress.slice(-4)}
                       </p>
                       <button
                         onClick={handleCopy}
@@ -131,7 +171,7 @@ export function WalletBalance() {
         </div>
 
         {/* Right side - NFT Stats (aligned with left side) */}
-        {isWalletConnected && ethBalance !== null ? (
+        {(isWalletConnected || addressProp) ? (
           <div className="flex-1 text-right">
             <p className="text-sm text-muted-foreground mb-1">NFT Collection</p>
             <h2 className="text-[1.44rem] font-semibold text-foreground">{nftCount} NFTs</h2>

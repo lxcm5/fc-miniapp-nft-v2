@@ -32,6 +32,8 @@ interface NFTGridProps {
   sortDirection?: "asc" | "desc"
   /** Increment this value to force the grid to re-fetch NFTs (e.g. pull-to-refresh) */
   refreshKey?: number
+  /** Override address to view another wallet's NFTs */
+  address?: string
 }
 
 export function NFTGrid({
@@ -44,15 +46,17 @@ export function NFTGrid({
   sortBy = "date",
   sortDirection = "desc",
   refreshKey = 0,
+  address: addressProp,
 }: NFTGridProps) {
   const { walletAddress, isWalletConnected } = useFarcaster()
+  const effectiveAddress = addressProp || walletAddress
   const [nfts, setNfts] = useState<NFT[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
     const fetchNFTs = async () => {
-      if (!walletAddress) {
+      if (!effectiveAddress) {
         setLoading(false)
         return
       }
@@ -60,7 +64,7 @@ export function NFTGrid({
       try {
         setLoading(true)
 
-        const response = await fetch(`/api/nfts?address=${walletAddress}`)
+        const response = await fetch(`/api/nfts?address=${effectiveAddress}`)
         const data = await response.json()
 
         if (data.error) {
@@ -145,7 +149,7 @@ export function NFTGrid({
     }
 
     fetchNFTs()
-  }, [walletAddress, isWalletConnected, isHiddenPage, refreshKey])
+  }, [effectiveAddress, isWalletConnected, isHiddenPage, refreshKey])
 
   const sortedNfts = [...nfts].sort((a, b) => {
     let comparison = 0
@@ -227,7 +231,7 @@ export function NFTGrid({
     )
   }
 
-  if (!isWalletConnected) {
+  if (!isWalletConnected && !effectiveAddress) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         <p>Connect your wallet to view your NFTs</p>
