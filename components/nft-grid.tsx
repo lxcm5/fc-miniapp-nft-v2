@@ -30,6 +30,8 @@ interface NFTGridProps {
   isHiddenPage: boolean
   sortBy?: "date" | "name" | "collection" | "floor"
   sortDirection?: "asc" | "desc"
+  /** Increment this value to force the grid to re-fetch NFTs (e.g. pull-to-refresh) */
+  refreshKey?: number
 }
 
 export function NFTGrid({
@@ -41,6 +43,7 @@ export function NFTGrid({
   isHiddenPage,
   sortBy = "date",
   sortDirection = "desc",
+  refreshKey = 0,
 }: NFTGridProps) {
   const { walletAddress, isWalletConnected } = useFarcaster()
   const [nfts, setNfts] = useState<NFT[]>([])
@@ -142,7 +145,7 @@ export function NFTGrid({
     }
 
     fetchNFTs()
-  }, [walletAddress, isWalletConnected, isHiddenPage])
+  }, [walletAddress, isWalletConnected, isHiddenPage, refreshKey])
 
   const sortedNfts = [...nfts].sort((a, b) => {
     let comparison = 0
