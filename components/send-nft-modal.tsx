@@ -5,7 +5,39 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState, useEffect } from "react"
 import { useFarcaster } from "@/app/providers"
-import farcasterSdk from "@farcaster/miniapp-sdk"
+import { useAccount, useWriteContract } from "wagmi"
+
+// ERC-721 ABI for safeTransferFrom(address,address,uint256)
+const erc721Abi = [
+  {
+    name: "safeTransferFrom",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "tokenId", type: "uint256" },
+    ],
+    outputs: [],
+  },
+] as const
+
+// ERC-1155 ABI for safeTransferFrom(address,address,uint256,uint256,bytes)
+const erc1155Abi = [
+  {
+    name: "safeTransferFrom",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "id", type: "uint256" },
+      { name: "amount", type: "uint256" },
+      { name: "data", type: "bytes" },
+    ],
+    outputs: [],
+  },
+] as const
 
 interface SendNFTModalProps {
   isOpen: boolean
@@ -31,7 +63,11 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
   const [isSending, setIsSending] = useState(false)
   const [recentRecipients, setRecentRecipients] = useState<FarcasterUser[]>([])
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const { walletAddress } = useFarcaster()
+  const { address: accountAddress } = useAccount()
+  const { writeContractAsync } = useWriteContract()
+  const fromAddress = accountAddress || (walletAddress as `0x${string}` | undefined)
 
   const myVerifiedAddresses = [walletAddress].filter(Boolean)
 
@@ -167,22 +203,17 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
 
   const handleSend = async () => {
     setIsSending(true)
+    setSendError(null)
 
     try {
-      const provider = farcasterSdk.wallet.ethProvider
-
-      if (!provider) {
-        throw new Error("Ethereum provider not available. Please open this app in Warpcast.")
+      if (!fromAddress) {
+        throw new Error("Wallet not connected")
       }
 
       const normalizedRecipient = recipient.toLowerCase()
 
       if (!normalizedRecipient.startsWith("0x")) {
         throw new Error("Invalid recipient address")
-      }
-
-      if (!walletAddress) {
-        throw new Error("Wallet not connected")
       }
 
       for (const nft of nftData || []) {
@@ -193,42 +224,53 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
           throw new Error("Missing contract address or token ID")
         }
 
-        let tokenIdHex: string
-        if (typeof rawTokenId === "string" && rawTokenId.startsWith("0x")) {
-          tokenIdHex = rawTokenId
+        const tokenId = BigInt(rawTokenId)
+        const tokenType = nft.tokenType || nft.contract?.tokenType || ""
+        const isERC1155 = tokenType.toUpperCase() === "ERC1155"
+
+        if (isERC1155) {
+          // ERC-1155: safeTransferFrom(address,address,uint256,uint256,bytes)
+          const txHash = await writeContractAsync({
+            address: contractAddress as `0x${string}`,
+            abi: erc1155Abi,
+            functionName: "safeTransferFrom",
+            args: [
+              fromAddress as `0x${string}`,
+              normalizedRecipient as `0x${string}`,
+              tokenId,
+              1n,
+              "0x" as `0x${string}`,
+            ],
+          })
+          console.log("[v0] ERC-1155 transfer tx:", txHash)
         } else {
-          tokenIdHex = "0x" + BigInt(rawTokenId).toString(16)
-        }
-
-        const functionSelector = "0x42842e0e"
-        const fromPadded = walletAddress.slice(2).padStart(64, "0")
-        const toPadded = normalizedRecipient.slice(2).padStart(64, "0")
-        const tokenIdPadded = tokenIdHex.slice(2).padStart(64, "0")
-        const encodedData = functionSelector + fromPadded + toPadded + tokenIdPadded
-
-        const txParams = {
-          from: walletAddress,
-          to: contractAddress,
-          data: encodedData,
-          value: "0x0",
-        }
-
-        const txHash = await provider.request({
-          method: "eth_sendTransaction",
-          params: [txParams],
-        })
-
-        if (!txHash) {
-          throw new Error("Transaction failed - no hash returned")
+          // ERC-721: safeTransferFrom(address,address,uint256)
+          const txHash = await writeContractAsync({
+            address: contractAddress as `0x${string}`,
+            abi: erc721Abi,
+            functionName: "safeTransferFrom",
+            args: [
+              fromAddress as `0x${string}`,
+              normalizedRecipient as `0x${string}`,
+              tokenId,
+            ],
+          })
+          console.log("[v0] ERC-721 transfer tx:", txHash)
         }
       }
 
       saveRecentRecipient(recipient, selectedUser || undefined)
-
       setStep("success")
     } catch (error: any) {
       console.error("Error sending NFT:", error)
-      alert(`Error sending NFT: ${error?.message || "Unknown error"}`)
+      const message = error?.message || ""
+      if (message.includes("execution reverted") || message.includes("revert")) {
+        setSendError("This NFT cannot be transferred (soulbound/non-transferable)")
+      } else if (message.includes("insufficient funds")) {
+        setSendError("Insufficient ETH to cover gas fees")
+      } else {
+        setSendError(message || "Unknown error")
+      }
     } finally {
       setIsSending(false)
     }
@@ -242,6 +284,7 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
       setSelectedUser(null)
       setSearchResults([])
       setIsAddressConfirmed(false)
+      setSendError(null)
     }, 300)
   }
 
@@ -451,13 +494,16 @@ export function SendNFTModal({ isOpen, onClose, nftIds, nftData }: SendNFTModalP
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" onClick={() => setStep("recipient")} disabled={isSending}>
+                <Button variant="outline" onClick={() => { setSendError(null); setStep("recipient") }} disabled={isSending}>
                   Back
                 </Button>
                 <Button onClick={handleSend} className="bg-primary" disabled={isSending || !isAddressConfirmed}>
                   {isSending ? "Sending..." : "Send"}
                 </Button>
               </div>
+              {sendError && (
+                <p className="text-sm text-red-500 mt-2">{sendError}</p>
+              )}
             </div>
           </>
         ) : (
